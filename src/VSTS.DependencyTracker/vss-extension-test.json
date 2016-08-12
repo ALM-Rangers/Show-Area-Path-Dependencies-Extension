@@ -1,0 +1,77 @@
+{
+  "manifestVersion": 1,
+  "id": "DevShowAreaPathDependencies",
+  "version": "0.1.2",
+  "name": "Dev : Work Dependency Tracker",
+  "description": "Display the dependency a team has with other teams (area paths).",
+  "baseUri": "https://localhost:44300/",
+  "publisher": "teamfoundation",
+  "scopes": [
+    "vso.work",
+    "vso.profile"
+  ],
+  "icons": {
+    "default": "img/default-icon.png"
+  },
+  "tags": [
+    "Work",
+    "Dependency",
+    "Backlog",
+    "Team"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "categories": [
+    "Plan and track"
+  ],
+  "content": {
+    "details": {
+      "path": "package/readme.md"
+    },
+    "license": {
+      "path": "marketplace/mp_terms.md"
+    }
+  },
+  "branding": {
+    "color": "rgb(51,65,133)",
+    "theme": "dark"
+  },
+  "links": {
+    "support": {
+      "uri": "http://aka.ms/vsarcontact"
+    }
+  },
+  "contributions": [
+    {
+      "id": "dependency-tracker-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Shows dependencies on the teams backlog",
+      "targets": [
+        "ms.vss-work-web.work-hub-group"
+      ],
+      "properties": {
+        "name": "Dependencies",
+        "icon": "img/configure.png",
+        "order": 100,
+        "uri": "index.html"
+      }
+    },
+    {
+      "id": "dependency-tracker-hub-tab",
+      "type": "ms.vss-web.tab",
+      "description": "Shows dependencies on the teams backlog",
+      "targets": [
+        "ms.vss-work-web.product-backlog-tabs"
+      ],
+      "properties": {
+        "uri": "index.html",
+        "title": "Dependencies",
+        "name": "Dependencies",
+        "registeredObjectId": "showDependencies"
+      }
+    }
+  ]
+}

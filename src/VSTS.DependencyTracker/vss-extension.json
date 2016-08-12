@@ -1,0 +1,130 @@
+{
+  "manifestVersion": 1,
+  "id": "ShowAreaPathDependencies",
+  "version": "1.1.4",
+  "name": "Show Area Path Dependencies",
+  "description": "Show area path dependencies a team has with other teams.",
+  "publisher": "ms-devlabs",
+  "public": true,
+  "scopes": [
+    "vso.work",
+    "vso.profile"
+  ],
+  "icons": {
+    "default": "img/default-icon.png"
+  },
+  "tags": [
+    "Work",
+    "Dependency",
+    "Backlog",
+    "Team"
+  ],
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "categories": [
+    "Plan and track"
+  ],
+  "content": {
+    "details": {
+      "path": "package/readme.md"
+    },
+    "license": {
+      "path": "marketplace/mp_terms.md"
+    }
+  },
+  "branding": {
+    "color": "rgb(51,65,133)",
+    "theme": "dark"
+  },
+  "links": {
+    "support": {
+      "uri": "http://aka.ms/vsarcontact"
+    }
+  },
+  "files": [
+    {
+      "path": "css",
+      "addressable": true
+    },
+    {
+      "path": "index.html",
+      "addressable": true
+    },
+    {
+      "path": "scripts/Configuration.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "scripts/dependencytracker.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "scripts/Helpers.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+     {
+      "path": "scripts/TelemetryClient.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "scripts/Infrastructure.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "sdk/VSS.SDK.min.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "sdk/ai.0.21.5-build00175.min.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "img/screenshot.gif",
+      "addressable": true
+    },
+    {
+      "path": "img/screen3.png",
+      "addressable": true
+    }
+  ],
+  "contributions": [
+    {
+      "id": "dependency-tracker-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Shows dependencies on the teams backlog",
+      "targets": [
+        "ms.vss-work-web.work-hub-group"
+      ],
+      "properties": {
+        "name": "Dependencies",
+        "icon": "img/configure.png",
+        "order": 100,
+        "uri": "index.html"
+      }
+    },
+    {
+      "id": "dependency-tracker-hub-tab",
+      "type": "ms.vss-web.tab",
+      "description": "Shows dependencies on the teams backlog",
+      "targets": [
+        "ms.vss-work-web.product-backlog-tabs"
+      ],
+      "properties": {
+        "uri": "index.html",
+        "title": "Dependencies",
+        "name": "Dependencies",
+        "registeredObjectId": "showDependencies"
+      }
+    }
+  ]
+}
