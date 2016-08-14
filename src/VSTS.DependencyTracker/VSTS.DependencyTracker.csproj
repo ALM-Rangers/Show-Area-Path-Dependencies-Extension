@@ -63,13 +63,11 @@
     <Content Include="img\screen3.png" />
     <Content Include="img\screenshot.gif" />
     <Content Include="index.html" />
-    <Content Include="package\license.txt" />
     <Content Include="sdk\ai.0.21.5-build00175.js" />
     <Content Include="sdk\ai.0.21.5-build00175.min.js" />
     <Content Include="sdk\VSS.SDK.js" />
     <Content Include="sdk\VSS.SDK.min.js" />
     <Content Include="marketplace\mp_terms.md" />
-    <Content Include="package\demo-script.md" />
     <Content Include="package\readme.md" />
     <None Include="package.json" />
   </ItemGroup>
