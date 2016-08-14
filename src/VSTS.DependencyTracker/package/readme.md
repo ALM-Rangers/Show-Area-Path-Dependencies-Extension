@@ -12,7 +12,7 @@ This extension provides a lightweight way to manage dependencies on other teams.
 
 ## Learn more
 
-The [source](https://github.com/ALM-Rangers/Show-Area-Path-Dependencies) to this extension is available. Feel free to take, fork, and extend.
+The [source](https://github.com/ALM-Rangers/Show-Area-Path-Dependencies-Extension) to this extension is available. Feel free to take, fork, and extend.
 
 > Microsoft DevLabs is an outlet for experiments from Microsoft, experiments that represent some of the latest ideas around developer tools. Solutions in this category are designed for broad usage, and you are encouraged to use and provide feedback on them; however, these extensions are not supported nor are any commitments made as to their longevity.
 
