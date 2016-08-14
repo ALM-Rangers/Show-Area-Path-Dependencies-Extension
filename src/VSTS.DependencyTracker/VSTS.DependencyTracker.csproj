@@ -93,7 +93,6 @@
     <TypeScriptCompile Include="typings\vss\vss.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="vss-extension-test.json" />
     <None Include="vss-extension.json" />
     <None Include="settings.tfx.json" />
     <None Include="gruntfile.js" />
