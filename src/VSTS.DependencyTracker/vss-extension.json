@@ -1,10 +1,10 @@
 {
   "manifestVersion": 1,
   "id": "ShowAreaPathDependencies",
-  "version": "1.1.4",
+  "version": "",
   "name": "Show Area Path Dependencies",
   "description": "Show area path dependencies a team has with other teams.",
-  "publisher": "ms-devlabs",
+  "publisher": "",
   "public": true,
   "scopes": [
     "vso.work",
