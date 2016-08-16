@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "ShowAreaPathDependencies",
-  "version": "",
+  "version": "0.0.0",
   "name": "Show Area Path Dependencies",
   "description": "Show area path dependencies a team has with other teams.",
   "publisher": "",
