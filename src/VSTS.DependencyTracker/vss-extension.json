@@ -74,7 +74,7 @@
       "addressable": true,
       "contentType": "application/javascript"
     },
-     {
+    {
       "path": "scripts/TelemetryClient.js",
       "addressable": true,
       "contentType": "application/javascript"
@@ -91,6 +91,11 @@
     },
     {
       "path": "sdk/ai.0.21.5-build00175.min.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "sdk/q.js",
       "addressable": true,
       "contentType": "application/javascript"
     },
