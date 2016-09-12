@@ -103,13 +103,12 @@ export class DependencyTracker {
 
         var gridCell = $("<div class='grid-cell'/>").width(column.width);
 
-        var decorator = $("<div class='work-item-color' />")
-            .text(" ");
+        var decorator = $("<div class='work-item-color' />").text(" ");
 
         if (rowData["owned"]) {
-            decorator.css("background-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]))
+            decorator.css("background-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]));
         } else {
-            decorator.addClass("unowned").css("border-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]))
+            decorator.addClass("unowned").css("border-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]));
         }
 
         gridCell.css("text-indent", (32 * level) + "px");
