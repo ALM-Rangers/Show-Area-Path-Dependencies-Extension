@@ -8,8 +8,8 @@ module.exports = function (grunt) {
         pkg: grunt.file.readJSON("package.json"),
         settings: grunt.file.readJSON("settings.tfx.json"),
         exec: {
-            package_test: {
-                command: "tfx extension create --manifest-globs vss-extension-test.json",
+            package: {
+                command: "tfx extension create --manifest-globs vss-extension.json",
                 stdout: true,
                 stderr: true
             },

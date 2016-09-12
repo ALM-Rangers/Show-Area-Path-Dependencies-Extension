@@ -1,4 +1,5 @@
-﻿//---------------------------------------------------------------------
+﻿
+//---------------------------------------------------------------------
 // <copyright file="DependencyTracker.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -90,7 +91,7 @@ export class DependencyTracker {
 
                         loadTimer.Stop();
                         this.TelemtryClient.trackMetric("Load_Duration", loadTimer.GetDurationInMilliseconds());
-                        
+
                     });
                 });
             });
@@ -102,13 +103,12 @@ export class DependencyTracker {
 
         var gridCell = $("<div class='grid-cell'/>").width(column.width);
 
-        var decorator = $("<div class='work-item-color' />")            
-        .text(" ");
+        var decorator = $("<div class='work-item-color' />").text(" ");
 
         if (rowData["owned"]) {
-            decorator.css("background-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]))           
+            decorator.css("background-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]));
         } else {
-            decorator.addClass("unowned").css("border-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]))
+            decorator.addClass("unowned").css("border-color", WitdColourHelper.ResolveColour(rowData["System.WorkItemType"]));
         }
 
         gridCell.css("text-indent", (32 * level) + "px");
@@ -129,7 +129,7 @@ export class DependencyTracker {
         titleHref.text(rowData["System.Title"]);
         var titleText = $("<div style='display:inline' />").add(titleHref);
 
-        
+
         gridCell.append(decorator);
         gridCell.append(titleText);
 
@@ -198,7 +198,7 @@ export class DependencyTracker {
             defer.resolve(workItemTypes);
             timer.Stop();
             this.TelemtryClient.trackMetric("LoadWorkItemDetails", timer.GetDurationInMilliseconds());
-        }, err=> {
+        }, err => {
             var s = err;
             this.TelemtryClient.trackException(err, "coreClient.getWorkItemTypeCategories");
         });
@@ -213,7 +213,7 @@ export class DependencyTracker {
         client.getRelationTypes().then(types => {
 
             var relationTypes: HashTable = {};
-            types.forEach(type=> {
+            types.forEach(type => {
                 relationTypes[type.referenceName] = type.name;
             });
 
@@ -266,51 +266,92 @@ export class DependencyTracker {
                 defer.resolve(null);
             } else {
 
-                client.getWorkItems(backlog, null, backlogIds.asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogWorkItems => {
-                    //get relation id's
-                    var relations = new Array<number>();
+                var loadSpecs = new Array<IPromise<any>>();
+                var spliceSize = 75;
+                var backlogSection = backlog.splice(0, spliceSize);
+                while (backlogSection.length > 0) {
 
-                    backlogWorkItems.forEach((backlogItem, idx, arr) => {
-                        if (backlogItem.relations) {
-                            backlogItem.relations.forEach(relation => {
-                                if (ConfigSettings.RelationTypes.indexOf(relation.rel) >= 0) {
-                                    relations.push(RelationHelper.FindIDFromLink(relation.url));
-                                }
-                            });
-                        }
+                    loadSpecs.push(this.GetWorkItemDetails(backlogSection, backlogIds.asOf));
+
+                    var backlogSection = backlog.splice(0, spliceSize);
+                }
+
+                Q.all(loadSpecs).done(all => {
+
+                    var workItems = [];
+                    var relations = [];
+
+                    all.forEach(resultItem => {
+                        workItems = workItems.concat(resultItem.workItems);
+                        relations = relations.concat(resultItem.relations);
                     });
 
-                    if (relations.length > 0) {
+                    var result = {
+                        workItems: workItems,
+                        relations: relations.filter(i => { return i !== null; })
+                    };
 
-                        client.getWorkItems(relations, null, backlogIds.asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogRelations => {
-
-                            var result = {
-                                workItems: backlogWorkItems,
-                                relations: backlogRelations
-                            };
-
-                            defer.resolve(result);
-                        });
-
-                    } else {
-
-                        var result = {
-                            workItems: backlogWorkItems,
-                            relations: null
-                        };
-
-                        defer.resolve(result);
-                    }
-                }, err=> {
-                    var s = err;
-                    this.TelemtryClient.trackException(err, "coreClient.getWorkItems");
-                    
+                    defer.resolve(result);
+                }, rejectReason => {
+                    this.TelemtryClient.trackException(rejectReason, "QueryBacklog");
+                    defer.reject(rejectReason);
                 });
             }
         });
 
         return defer.promise();
     }
+
+    public GetWorkItemDetails(backlogItems: number[], asOf: Date): IPromise<any> {
+
+        var client = WorkItemRestClient.getClient();
+
+        var defer = $.Deferred<any>();
+
+        client.getWorkItems(backlogItems, null, asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogWorkItems => {
+            //get relation id's
+            var relations = new Array<number>();
+
+            backlogWorkItems.forEach((backlogItem, idx, arr) => {
+                if (backlogItem.relations) {
+                    backlogItem.relations.forEach(relation => {
+                        if (ConfigSettings.RelationTypes.indexOf(relation.rel) >= 0) {
+                            relations.push(RelationHelper.FindIDFromLink(relation.url));
+                        }
+                    });
+                }
+            });
+
+            if (relations.length > 0) {
+
+                client.getWorkItems(relations, null, asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogRelations => {
+
+                    var result = {
+                        workItems: backlogWorkItems,
+                        relations: backlogRelations
+                    };
+
+                    defer.resolve(result);
+                });
+
+            } else {
+
+                var result = {
+                    workItems: backlogWorkItems,
+                    relations: null
+                };
+
+                defer.resolve(result);
+            }
+        }, err => {
+            var s = err;
+            this.TelemtryClient.trackException(err, "coreClient.getWorkItems");
+            defer.reject(err);
+        });
+
+        return defer;
+    }
+
     public BuildGridSource(backlogItems: WorkItemContracts.WorkItem[], relations: WorkItemContracts.WorkItem[], paths: AreaPathConfiguration[]): Grids.IGridHierarchyItem[] {
         var gridSource = new Array<Grids.IGridHierarchyItem>();
         var me = this;
