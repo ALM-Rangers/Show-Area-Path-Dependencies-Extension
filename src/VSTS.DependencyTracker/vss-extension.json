@@ -65,7 +65,7 @@
       "contentType": "application/javascript"
     },
     {
-      "path": "scripts/dependencytracker.js",
+      "path": "scripts/DependencyTracker.js",
       "addressable": true,
       "contentType": "application/javascript"
     },
