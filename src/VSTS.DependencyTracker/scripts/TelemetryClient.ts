@@ -12,7 +12,7 @@
 class TelemetryClient {
 
     private static TestingKey = "";
-    private static DevLabs = "304a47de-fc84-4c06-b91d-800e3c9e18e4";
+    private static DevLabs = "__INSTRUMENTATIONKEY__";
 
 
     private static telemetryClient: TelemetryClient;
