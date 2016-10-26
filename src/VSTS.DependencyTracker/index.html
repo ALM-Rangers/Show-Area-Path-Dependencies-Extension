@@ -44,73 +44,80 @@
             width: 7px;
             margin-left: 0px;
         }
+
+        #toolbar {
+            float: left;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
-    <div class="hub-title" style="visibility:hidden">
-        <div id="header">Backlog Dependencies</div>
-    </div>
-
-    <div id="container"></div>
-
-    <script type="text/javascript">
-        function setTitle(className, visibile) {
-            var control = document.getElementsByClassName(className)[0];
-            if (visibile == true) {
-                control.style.visibility = "visible";
-                control.style.position = "relative";
-            }
-            else {
-                control.style.visibility = "hidden";
-                control.style.position = "none";
-            }
-
-        }
-
-        // Initialize the VSS sdk
-        VSS.init({
-            usePlatformScripts: true,
-            usePlatformStyles: true,
-            explicitNotifyLoaded: true,
-            setupModuleLoader: true,
-            moduleLoaderConfig: {
-                paths: {
-                    "Scripts": "scripts"
+    <div id="page-container" class="hub-view explorer">
+        <div class="hub-title" style="visibility:hidden">
+            <div id="header">Backlog Dependencies</div>
+        </div>
+        <div id="filter-container" style="float:right"></div>
+        <div id="toolbar" class="toolbar"></div>
+        <div id="container"></div>
+        
+        <script type="text/javascript">
+            function setTitle(className, visibile) {
+                var control = document.getElementsByClassName(className)[0];
+                if (visibile == true) {
+                    control.style.visibility = "visible";
+                    control.style.position = "relative";
                 }
-            }
-        });
+                else {
+                    control.style.visibility = "hidden";
+                    control.style.position = "none";
+                }
 
-        // Wait for the SDK to be initialized
-       VSS.ready(function () {
-            if (VSS.getContribution().type === "ms.vss-web.tab") {
-                VSS.register("showDependencies", {
-                    pageTitle: function (state) {
-                        return "Backlog Dependencies";
-                    },
-                    isInvisible: function (state) {
-                        return false;
-                    },
-                    isDisabled: function (state) {
-                        return false;
+            }
+
+            // Initialize the VSS sdk
+            VSS.init({
+                usePlatformScripts: true,
+                usePlatformStyles: true,
+                explicitNotifyLoaded: true,
+                setupModuleLoader: true,
+                moduleLoaderConfig: {
+                    paths: {
+                        "Scripts": "scripts"
                     }
+                }
+            });
+
+            // Wait for the SDK to be initialized
+            VSS.ready(function () {
+                if (VSS.getContribution().type === "ms.vss-web.tab") {
+                    VSS.register("showDependencies", {
+                        pageTitle: function (state) {
+                            return "Backlog Dependencies";
+                        },
+                        isInvisible: function (state) {
+                            return false;
+                        },
+                        isDisabled: function (state) {
+                            return false;
+                        }
+                    });
+
+                    setTitle("hub-title", false);
+                    document.getElementById("container").style.borderTop = "1px solid #ccc";
+                } else {
+                    setTitle("hub-title", true);
+                }
+
+                VSS.notifyLoadSucceeded();
+                VSS.require(["VSS/Controls", "Scripts/DependencyTracker"], function (controls, dep) {
+                    var loader = new dep.DependencyTracker();
+                    loader.buildGrid();
                 });
 
-                setTitle("hub-title", false);
-                document.getElementById("container").style.borderTop = "1px solid #ccc";
-            } else {
-                setTitle("hub-title", true);
-            }
 
-            VSS.notifyLoadSucceeded();
-            VSS.require(["VSS/Controls", "Scripts/DependencyTracker"], function (controls, dep) {
-                var loader = new dep.DependencyTracker();
-                loader.buildGrid();
-            } );
+            });
 
-           
-       });
-      
-    </script>
-
+        </script>
+    </div>
 </body>
 </html>
