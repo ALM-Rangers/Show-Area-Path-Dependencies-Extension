@@ -76,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="scripts\Configuration.ts" />
+    <TypeScriptCompile Include="scripts\DataService.ts" />
     <TypeScriptCompile Include="scripts\DependencyTracker.ts" />
     <TypeScriptCompile Include="scripts\Helpers.ts" />
     <TypeScriptCompile Include="scripts\Infrastructure.ts" />

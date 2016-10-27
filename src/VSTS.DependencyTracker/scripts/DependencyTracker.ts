@@ -14,8 +14,7 @@
 "use strict";
 import Controls = require("VSS/Controls");
 import Grids = require("VSS/Controls/Grids");
-import WorkRestClient = require("TFS/Work/RestClient");
-import Contracts = require("TFS/Core/Contracts");
+
 import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
 import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
 import WorkItemServices = require("TFS/WorkItemTracking/Services");
@@ -24,6 +23,8 @@ import StatusIndicator = require("VSS/Controls/StatusIndicator");
 
 import Menus = require("VSS/Controls/Menus");
 import Navigation = require("VSS/Controls/Navigation");
+
+import DataService = require("./DataService");
 
 export class DependencyTracker {
 
@@ -38,12 +39,19 @@ export class DependencyTracker {
     public menubar = $("#toolbar");
     public pivotbar = $("#filter-container");
 
+    public DataService: DataService.DataService;
+    public Context: WebContext;
+
+    public Settings: IDependancySettings;
+
     constructor() {
+        this.DataService = new DataService.DataService();
     }
 
     public buildGrid() {
 
         var me = this;
+        this.Context = VSS.getWebContext();
 
         this.TelemtryClient.trackEvent("buildGrid");
 
@@ -51,50 +59,50 @@ export class DependencyTracker {
 
         me.WaitControl.startWait();
 
-        VSS.getService(VSS.ServiceIds.ExtensionData).then((dataService) => {
+        this.DataService.LoadSettings(this.Context).then(settings => {
+            this.Settings = settings;
+            this.DataService.FindAllRelationTypes().then(relations => {
+                me.RelationTypes = relations;
 
-            var ds = dataService;
+                var men = me.BuildMenu(me.menubar);
+                me.BuildPivotOptions(me.pivotbar);
 
-            var men = me.BuildMenu(me.menubar);
-            me.BuildPivotOptions(me.pivotbar);
-
-            me.LoadData(me.container);
+                me.LoadData(me.container, this.Context);
+            });
         });
+
+        me.WaitControl.endWait();
+
     }
 
 
-    public LoadData(container) {
+    public LoadData(container, context: WebContext) {
         var me = this;
 
         var loadTimer = new StopWatch();
         loadTimer.Start();
 
-        var context = VSS.getWebContext();
+        me.DataService.GetWorkItemTypes(context).then(workItemTypes => {
+            me.DataService.GetAreaPaths(context).then(paths => {
+                me.QueryBacklog(context, paths, workItemTypes).then(data => {
 
-        me.LoadWorkItemRelationTypes().then(links => {
-            me.RelationTypes = links;
-            me.LoadWorkItemDetails(context).then(workItemTypes => {
-                me.LoadPaths(context).then(paths => {
-                    me.QueryBacklog(context, paths, workItemTypes).then(data => {
+                    if (data) {
 
-                        if (data) {
+                        me.PopulateGrid(container, data, paths);
 
-                            me.PopulateGrid(container, data, paths);
+                    } else {
+                        container.text("It appears that you backlog is empty or has no items to display!");
+                    }
+                    me.WaitControl.endWait();
 
-                        } else {
-                            container.text("It appears that you backlog is empty or has no items to display!");
-                        }
+                    loadTimer.Stop();
+                    me.TelemtryClient.trackMetric("Load_Duration", loadTimer.GetDurationInMilliseconds());
+
+                },
+                    rej => {
+                        alert(rej);
                         me.WaitControl.endWait();
-
-                        loadTimer.Stop();
-                        me.TelemtryClient.trackMetric("Load_Duration", loadTimer.GetDurationInMilliseconds());
-
-                    },
-                        rej => {
-                            alert(rej);
-                            me.WaitControl.endWait();
-                        });
-                });
+                    });
             });
         });
     }
@@ -132,10 +140,15 @@ export class DependencyTracker {
         me.Grid.setDataSource(new Grids.GridHierarchySource(gridSource));
     }
 
-    public BuildPivotOptions(pivotbar) {
+    public BuildPivotOptions(pivotContainer) {
 
-        var actual = false;
+        this.CreateDependenciesFilter(pivotContainer);
+        //this.CreateQueryAcrossProjects(pivotContainer);
+    }
 
+    public CreateDependenciesFilter(pivotContainer) {
+        var actual = this.Settings.ShowEmpty;
+        var me = this;
         var pivotFilterOptions: Navigation.IPivotFilterOptions = {
             behavior: "toggle",
             text: "Show items without dependencies: ",
@@ -143,8 +156,32 @@ export class DependencyTracker {
                 { id: "show-yes", text: "yes", value: "Yes", selected: actual },
                 { id: "show-no", text: "no", value: "No", selected: !actual }
             ],
+            change: (item) => {
+
+                if (item.value == "Yes") {
+                    me.Settings.ShowEmpty = true;
+                }
+                else {
+                    me.Settings.ShowEmpty = false;
+                }
+                me.DataService.SaveSettings(me.Context, me.Settings);
+            }
+        };
+
+        return Controls.create<Navigation.PivotFilter, any>(Navigation.PivotFilter, pivotContainer, pivotFilterOptions);
+    }
+
+    public CreateQueryAcrossProjects(pivotContainer) {
+        var actual = false;
+
+        var pivotFilterOptions: Navigation.IPivotFilterOptions = {
+            behavior: "check",
+            text: "Query across projects: ",
+            items: [
+                { id: "show-yes", text: "yes", value: "Yes", selected: actual },
+                { id: "show-no", text: "no", value: "No", selected: !actual }
+            ],
             change: function (item) {
-                // dataService.setValue("showLineNumbers", item.value, { scopeType: "User" })
                 if (item.value == "Yes") {
                     alert("Yes");
                 }
@@ -154,7 +191,7 @@ export class DependencyTracker {
             }
         };
 
-        return Controls.create<Navigation.PivotFilter, any>(Navigation.PivotFilter, pivotbar, pivotFilterOptions);
+        return Controls.create<Navigation.PivotFilter, any>(Navigation.PivotFilter, pivotContainer, pivotFilterOptions);
     }
 
     public BuildMenu(toolbar: any): Menus.MenuBar {
@@ -185,9 +222,9 @@ export class DependencyTracker {
 
                 switch (d) {
                     case "refresh-items":
-                        me.LoadData(me.container);
+                        me.LoadData(me.container, this.Context);
                         break;
-                } 
+                }
                 var item = this.MenuBar.getItem(d);
 
                 item.toggleIsPinned(true, {
@@ -258,58 +295,7 @@ export class DependencyTracker {
         //!Done !Removed
     }
 
-    public LoadPaths(context: WebContext): IPromise<AreaPathConfiguration[]> {
-
-        var defer = $.Deferred<AreaPathConfiguration[]>();
-        //setup search team context
-        var teamContext: Contracts.TeamContext = {
-            project: context.project.name,
-            projectId: context.project.id,
-            team: context.team.name,
-            teamId: context.team.id
-        };
-
-        //create work client
-        var client = WorkRestClient.getClient();
-
-        //query the area paths
-        client.getTeamFieldValues(teamContext).then((settings) => {
-            var areaPaths = new Array<AreaPathConfiguration>();
-            settings.values.forEach(item => {
-                areaPaths.push({ Path: item.value, IncludeChildren: item.includeChildren });
-            });
-            defer.resolve(areaPaths);
-        });
-
-        return defer.promise();
-
-    }
-
-    public LoadWorkItemDetails(context: WebContext): IPromise<string[]> {
-        var timer = new StopWatch();
-        timer.Start();
-
-        var me = this;
-        var defer = $.Deferred<string[]>();
-
-        var coreClient = WorkItemRestClient.getClient();
-
-        coreClient.getWorkItemTypeCategories(context.project.name).then(categories => {
-            var requirementCategory = categories.filter((wtc, index, categories) => { return wtc.referenceName === ConfigSettings.RequirementCategory })[0];
-
-            var workItemTypes = me.BuildWorkItemList(requirementCategory);
-
-            defer.resolve(workItemTypes);
-            timer.Stop();
-            this.TelemtryClient.trackMetric("LoadWorkItemDetails", timer.GetDurationInMilliseconds());
-        }, err => {
-            var s = err;
-            this.TelemtryClient.trackException(err, "coreClient.getWorkItemTypeCategories");
-        });
-
-        return defer.promise();
-
-    }
+    
 
     public LoadWorkItemRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
@@ -326,19 +312,7 @@ export class DependencyTracker {
         return defer.promise();
     }
 
-    public BuildWorkItemList(requirementCategory: WorkItemContracts.WorkItemTypeCategory): Array<string> {
-        var requirementTypes = new Array<string>();
-        requirementCategory.workItemTypes.forEach(workItem => { requirementTypes.push(workItem.name) });
-
-        if (ConfigSettings.IncludeBug) {
-            //if bug does not exist - add it...
-            if (requirementTypes.indexOf(ConfigSettings.BugTypeName) < 0) {
-                requirementTypes.push(ConfigSettings.BugTypeName);
-            }
-        }
-
-        return requirementTypes;
-    }
+   
 
     public QueryBacklog(contex: WebContext, areaPaths: AreaPathConfiguration[], backlogTypes: string[]): IPromise<any> {
 
@@ -484,7 +458,9 @@ export class DependencyTracker {
                 });
             }
 
-            gridSource.push(rootItem);
+            if (me.Settings.ShowEmpty || rootItem.children.length > 0) {
+                gridSource.push(rootItem);
+            }
         });
 
         return gridSource;
