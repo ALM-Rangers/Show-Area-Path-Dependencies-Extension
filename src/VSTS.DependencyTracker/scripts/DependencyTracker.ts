@@ -71,25 +71,27 @@ export class DependencyTracker {
             });
         });
 
-        me.WaitControl.endWait();
+
 
     }
 
 
     public LoadData(container, context: WebContext) {
         var me = this;
-
+        me.WaitControl.startWait();
         var loadTimer = new StopWatch();
         loadTimer.Start();
 
+        me.WaitControl.setMessage("Loading work item types...");
         me.DataService.GetWorkItemTypes(context).then(workItemTypes => {
+            me.WaitControl.setMessage("Loading area paths...");
             me.DataService.GetAreaPaths(context).then(paths => {
+                me.WaitControl.setMessage("Loading backlog");
                 me.QueryBacklog(context, paths, workItemTypes).then(data => {
 
                     if (data) {
-
+                        me.WaitControl.setMessage("Populating grid");
                         me.PopulateGrid(container, data, paths);
-
                     } else {
                         container.text("It appears that you backlog is empty or has no items to display!");
                     }
@@ -138,6 +140,7 @@ export class DependencyTracker {
         }
         var gridSource = me.BuildGridSource(data.workItems, data.relations, paths);
         me.Grid.setDataSource(new Grids.GridHierarchySource(gridSource));
+
     }
 
     public BuildPivotOptions(pivotContainer) {
@@ -165,6 +168,7 @@ export class DependencyTracker {
                     me.Settings.ShowEmpty = false;
                 }
                 me.DataService.SaveSettings(me.Context, me.Settings);
+                me.LoadData(me.container, me.Context);
             }
         };
 
@@ -213,6 +217,8 @@ export class DependencyTracker {
             showIcon: true,
             items: [
                 { id: "refresh-items", title: "Refresh", icon: "icon-refresh", showText: false, groupId: "icon" },
+                { id: "expand-items", title: "Expand", icon: "icon-tree-expand-all", showText: false, groupId: "icon1" },
+                { id: "collapse-items", title: "Collapse", icon: "icon-tree-collapse-all", showText: false, groupId: "icon1" },
                 { id: "select-columns", text: "Column Options", title: "Column Options", showText: true, noIcon: true, disabled: true, groupId: "text" },
                 //{ id: "stop-items", text: "Stop", title: "Stop", showText: true, noIcon: true, disabled: true, groupId: "text" },
                 //{ id: "help-items", text: "Help", title: "Help", showText: true, noIcon: true, groupId: "text" }
@@ -224,14 +230,15 @@ export class DependencyTracker {
                     case "refresh-items":
                         me.LoadData(me.container, this.Context);
                         break;
+                    case "collapse-items":
+                        me.Grid.collapseAll();
+                        break;
+                    case "expand-items":
+                        me.Grid.expandAll();
+                        break;
                 }
-                var item = this.MenuBar.getItem(d);
-
-                item.toggleIsPinned(true, {
-                    unfocus: true
-                });
-
             }
+
         };
 
 
@@ -295,7 +302,7 @@ export class DependencyTracker {
         //!Done !Removed
     }
 
-    
+
 
     public LoadWorkItemRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
@@ -312,7 +319,7 @@ export class DependencyTracker {
         return defer.promise();
     }
 
-   
+
 
     public QueryBacklog(contex: WebContext, areaPaths: AreaPathConfiguration[], backlogTypes: string[]): IPromise<any> {
 
