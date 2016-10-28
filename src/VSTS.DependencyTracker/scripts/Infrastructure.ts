@@ -30,6 +30,13 @@ interface AreaPathConfiguration {
     IncludeChildren: boolean;
 }
 
+interface ColumnDefinition {
+    name: string;
+    refname: string;
+    width: number;
+    required: boolean;
+}
+
 class LoadPromise {
     private executebody: Action<Action<string[]>>;
 

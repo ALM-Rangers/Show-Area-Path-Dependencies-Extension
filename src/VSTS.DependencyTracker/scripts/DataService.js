@@ -11,7 +11,7 @@
 define(["require", "exports", "TFS/WorkItemTracking/RestClient", "TFS/Work/RestClient"], function (require, exports, WorkItemRestClient, WorkRestClient) {
     /// <reference path="../typings/tsd.d.ts" />
     /// <reference path="Configuration.ts" />
-    /// <reference path="telemetryclient.ts" />
+    /// <reference path="TelemetryClient.ts" />
     "use strict";
     var DataService = (function () {
         function DataService() {
@@ -100,6 +100,29 @@ define(["require", "exports", "TFS/WorkItemTracking/RestClient", "TFS/Work/RestC
                 }
             }
             return requirementTypes;
+        };
+        DataService.prototype.GetWorkItemFields = function (context) {
+            var defer = $.Deferred();
+            this.GetWorkItemTypes(context).then(function (workItemTypes) {
+                var loadSpecs = new Array();
+                var workItemClient = WorkItemRestClient.getClient();
+                workItemTypes.forEach(function (witType) {
+                    loadSpecs.push(workItemClient.getWorkItemType(context.project.name, witType));
+                });
+                Q.all(loadSpecs).done(function (witTypes) {
+                    var fields = [];
+                    witTypes.forEach(function (witType) {
+                        witType.fieldInstances.forEach(function (field) {
+                            var check = fields.filter(function (f) { return f.referenceName == field.referenceName; });
+                            if (check.length == 0) {
+                                fields.push(field);
+                            }
+                        });
+                        defer.resolve(fields.sort(function (a, b) { return a.name.localeCompare(b.name); }));
+                    });
+                });
+            });
+            return defer.promise();
         };
         return DataService;
     }());

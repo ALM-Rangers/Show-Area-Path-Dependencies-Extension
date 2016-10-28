@@ -14,7 +14,16 @@ class ConfigSettings {
     static IncludeBug: boolean = true;
     static BugTypeName: string = "Bug";
     static ResultSize: number = 10;
-    static FieldList: string[] = ["[System.WorkItemType]", "[System.Title]", "[System.AreaPath]", "[System.State]", "[Microsoft.VSTS.Scheduling.Effort]", "[System.IterationPath]", "[System.Tags]", "[System.NodeName]", "[System.WorkItemType]"];
+    static FieldList: ColumnDefinition[] = [
+        { name: "Work Item Type", refname: "System.WorkItemType", width: 200, required: true },
+        { name: "Title", refname: "System.Title", width: 400, required: true },
+        { name: "Area Path", refname: "System.AreaPath", width: 200, required: true },
+        { name: "State", refname: "System.State", width: 100, required: false },
+        { name: "Effort", refname: "Microsoft.VSTS.Scheduling.Effort", width: 10, required: false },
+        { name: "Iteration Path", refname: "System.IterationPath", width: 200, required: false},
+        { name: "Tags", refname: "System.Tags", width: 100, required: false},
+        { name: "Node Name", refname: "System.NodeName", width: 100, required: false }
+    ];
     static RelationTypes: string[] = [
         "System.LinkTypes.Dependency-Forward", //sucsessor
         "System.LinkTypes.Dependency-Reverse" //predesessor
@@ -41,7 +50,7 @@ class ConfigSettings {
 
 interface IDependancySettings {
     id: string;
-    Fields: string[];
+    Fields: ColumnDefinition[];
     Relations: string[];
     ShowEmpty: boolean;
     SearchAccrossProjects: boolean;

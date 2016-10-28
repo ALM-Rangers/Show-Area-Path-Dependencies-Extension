@@ -45,6 +45,7 @@
     <None Include=".vscode\tasks.json" />
     <Content Include="css\StyleSheet1.css" />
     <Content Include="sdk\q.js" />
+    <Content Include="select_columns.html" />
     <Content Include="web.config" />
     <Content Include="chutzpah.json" />
     <Content Include="packages.config" />
@@ -76,6 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="scripts\Configuration.ts" />
+    <TypeScriptCompile Include="scripts\ConfigurationDialog.ts" />
     <TypeScriptCompile Include="scripts\DataService.ts" />
     <TypeScriptCompile Include="scripts\DependencyTracker.ts" />
     <TypeScriptCompile Include="scripts\Helpers.ts" />

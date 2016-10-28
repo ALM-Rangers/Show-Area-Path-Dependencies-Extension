@@ -44,7 +44,7 @@ class TelemetryClient {
         try {
             var webContext = VSS.getWebContext();
 
-            this.IsAvailable = webContext.account.uri.indexOf("visualstudio.com") > 0;
+            this.IsAvailable = false;//webContext.account.uri.indexOf("visualstudio.com") > 0;
 
             if (this.IsAvailable) {
                 var init = new Microsoft.ApplicationInsights.Initialization(snippet);

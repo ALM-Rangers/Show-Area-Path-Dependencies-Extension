@@ -12,7 +12,7 @@
 
 /// <reference path="../typings/tsd.d.ts" />
 /// <reference path="Configuration.ts" />
-/// <reference path="telemetryclient.ts" />
+/// <reference path="TelemetryClient.ts" />
 
 
 "use strict";
@@ -133,5 +133,36 @@ export class DataService {
         return requirementTypes;
     }
 
+    public GetWorkItemFields(context: WebContext): IPromise<WorkItemContracts.WorkItemFieldReference[]> {
+
+        var defer = $.Deferred<WorkItemContracts.WorkItemFieldReference[]>();
+
+        this.GetWorkItemTypes(context).then(workItemTypes => {
+            var loadSpecs = new Array<IPromise<WorkItemContracts.WorkItemType>>();
+            var workItemClient = WorkItemRestClient.getClient();
+
+            workItemTypes.forEach(witType => {
+                loadSpecs.push(workItemClient.getWorkItemType(context.project.name, witType));
+            });
+
+            Q.all(loadSpecs).done(witTypes => {
+                var fields: WorkItemContracts.WorkItemFieldReference[] = [];
+                witTypes.forEach(witType => {
+                    witType.fieldInstances.forEach(field => {
+                        var check = fields.filter(f => { return f.referenceName == field.referenceName; });
+                        if (check.length == 0) {
+                            fields.push(field);
+                        }
+                    });
+
+                    defer.resolve(fields.sort((a, b) => { return a.name.localeCompare(b.name); }));
+                });
+            });
+
+        });
+
+        return defer.promise();
+
+    }
 
 }

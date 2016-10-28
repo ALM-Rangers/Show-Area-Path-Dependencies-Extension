@@ -25,6 +25,7 @@ import Menus = require("VSS/Controls/Menus");
 import Navigation = require("VSS/Controls/Navigation");
 
 import DataService = require("./DataService");
+import Config = require("./ConfigurationDialog");
 
 export class DependencyTracker {
 
@@ -67,12 +68,11 @@ export class DependencyTracker {
                 var men = me.BuildMenu(me.menubar);
                 me.BuildPivotOptions(me.pivotbar);
 
-                me.LoadData(me.container, this.Context);
+                // me.LoadData(me.container, this.Context);
             });
         });
 
-
-
+        me.WaitControl.endWait();
     }
 
 
@@ -219,7 +219,7 @@ export class DependencyTracker {
                 { id: "refresh-items", title: "Refresh", icon: "icon-refresh", showText: false, groupId: "icon" },
                 { id: "expand-items", title: "Expand", icon: "icon-tree-expand-all", showText: false, groupId: "icon1" },
                 { id: "collapse-items", title: "Collapse", icon: "icon-tree-collapse-all", showText: false, groupId: "icon1" },
-                { id: "select-columns", text: "Column Options", title: "Column Options", showText: true, noIcon: true, disabled: true, groupId: "text" },
+                { id: "select-columns", text: "Column Options", title: "Column Options", showText: true, noIcon: true, disabled: false, groupId: "text" },
                 //{ id: "stop-items", text: "Stop", title: "Stop", showText: true, noIcon: true, disabled: true, groupId: "text" },
                 //{ id: "help-items", text: "Help", title: "Help", showText: true, noIcon: true, groupId: "text" }
             ],
@@ -236,6 +236,10 @@ export class DependencyTracker {
                     case "expand-items":
                         me.Grid.expandAll();
                         break;
+                    case "select-columns":
+
+                        me.SelectColumns();
+                        break;
                 }
             }
 
@@ -244,6 +248,46 @@ export class DependencyTracker {
 
         // Create the menubar in a container element
         return Controls.create<Menus.MenuBar, any>(Menus.MenuBar, toolbar, menuOptions);
+    }
+
+    public SelectColumns() {
+        var me = this;
+        VSS.getService(VSS.ServiceIds.Dialog).then((dialogService: IHostDialogService) => {
+            var extensionCtx = VSS.getExtensionContext();
+            // Build absolute contribution ID for dialogContent
+            var contributionId = extensionCtx.publisherId + "." + extensionCtx.extensionId + ".configuration";
+            var dialogModel: Config.ConfigurationDialogModel;
+
+            // Show dialog
+            var dialogOptions: IHostDialogOptions = {
+                title: "Column Selection",
+                width: 560,
+                height: 400,
+                getDialogResult: () => { return me.Settings; },
+                okCallback: (result: IDependancySettings) => {
+                    if (dialogModel != null) {
+                        result.Fields = dialogModel.GetSelectedFields();
+                        me.DataService.SaveSettings(me.Context, result);
+                        me.LoadData(me.container, me.Context);
+                    }
+                }
+            };
+
+
+            dialogService.openDialog(contributionId, dialogOptions).then(dialog => {
+                dialog.getContributionInstance("configuration").then((instance: Config.ConfigurationDialogModel) => {
+                    instance.SetDataService(me.DataService);
+                    instance.SetSettings(me.Settings);
+                    instance.Load(me.Context);
+
+                    dialogModel = instance;
+
+                    dialog.updateOkButton(true);
+
+
+                });
+            });
+        });
     }
 
     public GetFormattedTitle(column: Grids.IGridColumn, dataIndex: number, level: number, indentIndex: number) {
@@ -477,8 +521,8 @@ export class DependencyTracker {
         var values: any[] = [];
 
         ConfigSettings.FieldList.forEach(field => {
-            var sanitizedField = field.replace("[", "").replace("]", "");
-            values[sanitizedField] = workItem.fields[sanitizedField];
+            //var sanitizedField = field.replace("[", "").replace("]", "");
+            values[field.refname] = workItem.fields[field.refname];
         });
 
         //additional values to keep around

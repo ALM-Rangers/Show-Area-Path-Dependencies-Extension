@@ -1,0 +1,164 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <title>Dependency Tracker - Configuration</title>
+    <link rel="stylesheet" href="css/app.css" type="text/css" />
+    <script src="sdk/VSS.SDK.min.js"></script>
+    <script src="sdk/q.js"></script>
+    <script src="sdk/ai.0.21.5-build00175.min.js"></script>
+    <script src="scripts/TelemetryClient.js"></script>
+    <script src="scripts/Configuration.js"></script>
+    <script src="scripts/Helpers.js"></script>
+
+    <style>
+        .selected {
+            top: 0px;
+            bottom: 0px;
+            right: 0px;
+            left: 50%;
+            position: absolute;
+        }
+
+        .available {
+            top: 0px;
+            bottom: 0px;
+            right: 50%;
+            left: 0px;
+            position: absolute;
+        }
+
+        .column-options select {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ccc;
+        }
+
+        .column-options .content .list-container {
+            position: absolute;
+            left: 0px;
+            top: 23px;
+            right: 4em;
+            bottom: 0px;
+        }
+
+        .column-options .content .buttons {
+            position: absolute;
+            right: 0px;
+            width: 4em;
+            top: 23px;
+            bottom: 0px;
+            text-align: center;
+        }
+
+        .column-options button {
+            padding: 1px;
+            /*width: 24px;*/
+            height: 24px;
+            margin-bottom: 2px;
+        }
+
+        button, button.ui-state-default, button.ui-button {
+            font-family: "-apple-system",BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Helvetica,Ubuntu,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+            height: 30px;
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+            color: #333;
+            cursor: pointer;
+            border-radius: 2px;
+            outline: 0;
+            padding: 2px 12px 2px 12px;
+        }
+
+        .column-options .ui-button-text {
+            padding: 2px 0 0 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="column-options no-sort">
+
+        <div class="columns">
+            <div class="content display">
+                <div class="available">
+                    <div class="header">
+                        <label for="display-available-list">Available columns</label>
+                    </div>
+                    <div class="list-container" id="available-list-container">
+                        <select id="display-available-list" size="2" multiple="multiple"></select>
+                    </div>
+                    <div class="buttons">
+                        <div>
+                            <button id="select_column" title="Add Column" disabled="" class="add ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                                <span class="ui-button-text">
+                                    <span class="icon icon-next-2"></span>
+                                </span>
+                            </button>
+                        </div>
+                        <div>
+                            <button id="remove_column" title="Remove Column" disabled="" class="remove ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                                <span class="ui-button-text">
+                                    <span class="icon icon-prev-2"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="selected">
+                    <div class="header">
+                        <label for="display-selected-list">Selected columns</label>
+                    </div>
+                    <div class="list-container">
+                        <select id="display-list" size="2" multiple="multiple"></select>
+                    </div>
+                    <div class="buttons">
+                        <div>
+                            <button title="Move Column Up" disabled="" class="move-up ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                                <span class="ui-button-text">
+                                    <span class="icon icon-up"></span>
+                                </span>
+                            </button>
+                        </div>
+                        <div>
+                            <button title="Move Column Down" disabled="" class="move-down ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                                <span class="ui-button-text">
+                                    <span class="icon icon-down"></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+
+        VSS.init({
+            explicitNotifyLoaded: true,
+            usePlatformScripts: true,
+            usePlatformStyles: true,
+            setupModuleLoader: true,
+            moduleLoaderConfig: {
+                paths: {
+                    "Scripts": "scripts"
+                }
+            }
+        });
+
+        VSS.ready(function () {
+            VSS.require(["VSS/Controls", "VSS/Controls/Grids", "Scripts/ConfigurationDialog"], function (Controls, Grids, config) {
+                VSS.register("configuration", function (context) {
+                    return new config.ConfigurationDialogModel(context);
+                });
+                VSS.notifyLoadSucceeded();
+                // $("#email-body-editor").wysiwyg();
+            });
+        });
+
+    </script>
+</body>
+</html>
