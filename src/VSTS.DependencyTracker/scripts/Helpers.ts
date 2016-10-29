@@ -9,17 +9,21 @@
 // <summary>Various helper classes and functions</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="configuration.ts" />
+/// <reference path="Configuration.ts" />
 
 class WiqlHelper {
 
-    static CreateBacklogWiql(paths: AreaPathConfiguration[], backlogTypes: string[], backlogStates: string[]): string {
+    static CreateBacklogWiql(paths: AreaPathConfiguration[], backlogTypes: string[], backlogStates: string[], fields: ColumnDefinition[]): string {
 
         var backlogTypeString = "'" + backlogTypes.join("','") + "'";
         var backlogStateString = "'" + backlogStates.join("','") + "'";
-        var fields = ConfigSettings.FieldList.join(", ") + " ";
 
-        var queryTemplate = "select " + fields +
+        var fieldNames: string[] = [];
+        fields.forEach(field => { fieldNames.push("[" + field.refname + "]"); });
+
+        var fieldStatement = fieldNames.join(", ") + " ";
+
+        var queryTemplate = "select " + fieldStatement +
             "from WorkItems " +
             "where( [System.WorkItemType] in ({BacklogTypes}) " +
             "and ( {AreaPaths} ) " +
@@ -49,12 +53,6 @@ class WiqlHelper {
 
         return areaPath;
     }
-
-    static buildBacklogTypeList(backlogTypes: string[]): string {
-        return "";
-
-    }
-
 }
 
 class RelationHelper {

@@ -15,14 +15,14 @@ class ConfigSettings {
     static BugTypeName: string = "Bug";
     static ResultSize: number = 10;
     static FieldList: ColumnDefinition[] = [
-        { name: "Work Item Type", refname: "System.WorkItemType", width: 200, required: true },
-        { name: "Title", refname: "System.Title", width: 400, required: true },
-        { name: "Area Path", refname: "System.AreaPath", width: 200, required: true },
-        { name: "State", refname: "System.State", width: 100, required: false },
-        { name: "Effort", refname: "Microsoft.VSTS.Scheduling.Effort", width: 10, required: false },
-        { name: "Iteration Path", refname: "System.IterationPath", width: 200, required: false},
-        { name: "Tags", refname: "System.Tags", width: 100, required: false},
-        { name: "Node Name", refname: "System.NodeName", width: 100, required: false }
+        { name: "Work Item Type", refname: "System.WorkItemType", width: 200, required: true, order : 1 },
+        { name: "Title", refname: "System.Title", width: 400, required: true, order: 2 },
+        { name: "Area Path", refname: "System.AreaPath", width: 200, required: true, order: 3 },
+        { name: "State", refname: "System.State", width: 100, required: false, order: 4 },
+        { name: "Effort", refname: "Microsoft.VSTS.Scheduling.Effort", width: 10, required: false, order: 4 },
+        { name: "Iteration Path", refname: "System.IterationPath", width: 200, required: false, order: 5},
+        { name: "Tags", refname: "System.Tags", width: 100, required: false, order: 6},
+        { name: "Node Name", refname: "System.NodeName", width: 100, required: false, order: 7 }
     ];
     static RelationTypes: string[] = [
         "System.LinkTypes.Dependency-Forward", //sucsessor

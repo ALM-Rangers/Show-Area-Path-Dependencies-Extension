@@ -126,10 +126,10 @@ export class ConfigurationDialogModel {
             if (forward) {
                 var column = me.AvailableFields.filter(item => { return item.referenceName == e.value; });
                 if (column.length >= 0) {
-                    me.FieldList.push({ name: column[0].name, refname: column[0].referenceName, required: false, width: 100 });
+                    me.FieldList.push({ name: column[0].name, refname: column[0].referenceName, required: false, width: 100, order: me.FieldList.length + 1 });
                 }
             } else {
-                me.FieldList = $.grep(me.FieldList, f => { return f.refname == e.value });
+                me.FieldList = me.FieldList.filter(f => { return f.refname != e.value });
             }
             target.append("<option value='" + e.value + "'>" + e.text + "</option>");
         });

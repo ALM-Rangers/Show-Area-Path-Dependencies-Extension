@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------
 // <copyright file="DependencyTracker.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -7,7 +7,7 @@
 //    PARTICULAR PURPOSE AND NONINFRINGEMENT.
 // </copyright>
 // <summary>Main logic for the DependencyTracker Extension</summary>
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 /// <reference path="../typings/tsd.d.ts" />
 /// <reference path="Configuration.ts" />
@@ -18,23 +18,22 @@ import Grids = require("VSS/Controls/Grids");
 import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
 import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
 import WorkItemServices = require("TFS/WorkItemTracking/Services");
-import CoreRestClient = require("TFS/Core/RestClient");
-import StatusIndicator = require("VSS/Controls/StatusIndicator");
 
 import Menus = require("VSS/Controls/Menus");
 import Navigation = require("VSS/Controls/Navigation");
 
 import DataService = require("./DataService");
 import Config = require("./ConfigurationDialog");
+import UIService = require("./UIService");
 
 export class DependencyTracker {
+    static WaitControlID = "dependencymodelwaitcontrol";
 
     public GridSource: any;
     public Grid: Grids.Grid;
     public RelationTypes: HashTable = {};
     public TelemtryClient = TelemetryClient.getClient();
     public MenuBar: Menus.MenuBar;
-    public WaitControl: StatusIndicator.WaitControl;
 
     public container = $("#container");
     public menubar = $("#toolbar");
@@ -52,50 +51,53 @@ export class DependencyTracker {
     public buildGrid() {
 
         var me = this;
+
         this.Context = VSS.getWebContext();
 
         this.TelemtryClient.trackEvent("buildGrid");
 
-        me.WaitControl = me.BuildWaitControl(me.container);
+        var control = UIService.UIService.GetWaitControl(DependencyTracker.WaitControlID, me.container);
 
-        me.WaitControl.startWait();
+        control.startWait();
 
         this.DataService.LoadSettings(this.Context).then(settings => {
             this.Settings = settings;
             this.DataService.FindAllRelationTypes().then(relations => {
                 me.RelationTypes = relations;
 
-                var men = me.BuildMenu(me.menubar);
+                me.BuildMenu(me.menubar);
                 me.BuildPivotOptions(me.pivotbar);
 
-                // me.LoadData(me.container, this.Context);
+                me.LoadData(me.container, this.Context);
             });
         });
 
-        me.WaitControl.endWait();
+        // TODO: remove....
+        // control.endWait();
     }
 
 
-    public LoadData(container, context: WebContext) {
+    public LoadData(container: JQuery, context: WebContext) {
         var me = this;
-        me.WaitControl.startWait();
+        var waitControl = UIService.UIService.GetWaitControl(DependencyTracker.WaitControlID, me.container);
+        waitControl.startWait();
         var loadTimer = new StopWatch();
         loadTimer.Start();
 
-        me.WaitControl.setMessage("Loading work item types...");
+        waitControl.setMessage("Loading work item types...");
         me.DataService.GetWorkItemTypes(context).then(workItemTypes => {
-            me.WaitControl.setMessage("Loading area paths...");
+            waitControl.setMessage("Loading area paths...");
             me.DataService.GetAreaPaths(context).then(paths => {
-                me.WaitControl.setMessage("Loading backlog");
+                waitControl.setMessage("Loading backlog");
                 me.QueryBacklog(context, paths, workItemTypes).then(data => {
 
                     if (data) {
-                        me.WaitControl.setMessage("Populating grid");
+                        waitControl.setMessage("Populating grid");
                         me.PopulateGrid(container, data, paths);
                     } else {
                         container.text("It appears that you backlog is empty or has no items to display!");
                     }
-                    me.WaitControl.endWait();
+                    waitControl.endWait();
 
                     loadTimer.Stop();
                     me.TelemtryClient.trackMetric("Load_Duration", loadTimer.GetDurationInMilliseconds());
@@ -103,53 +105,89 @@ export class DependencyTracker {
                 },
                     rej => {
                         alert(rej);
-                        me.WaitControl.endWait();
+                        waitControl.endWait();
                     });
             });
         });
     }
 
-    public PopulateGrid(container: any, data: any, paths: AreaPathConfiguration[]) {
+    public GetGridColumns(fields: ColumnDefinition[]): Grids.IGridColumn[] {
+
         var me = this;
 
-        if (!me.Grid) {
-            var screenHeight = (screen.availHeight * 0.75) + "px";
-            var options: Grids.IGridOptions = {
-                height: screenHeight,
-                width: "100%",
-                columns: [
-                    { text: "Area Path", width: 200, index: "System.AreaPath", canSortBy: false },
-                    { text: "Work Item Type", width: 200, index: "System.WorkItemType" },
-                    { text: "Title", width: 400, index: "System.Title", getCellContents: (rowInfo: Grids.IGridRowInfo, dataIndex: number, expandedState: number, level: number, column: Grids.IGridColumn, indentIndex: number, columnOrder: number) => { return me.GetFormattedTitle(column, dataIndex, level, indentIndex); } },
-                    { text: "State", width: 100, index: "System.State" },
-                    { text: "Iteration Path", width: 200, index: "System.IterationPath" },
-                    { text: "Link", width: 200, index: "System.LinkName" },
-                ],
-                openRowDetail: (index: number) => {
-                    var workItem = me.Grid.getRowData(index);
-                    var workItemService = WorkItemServices.WorkItemFormNavigationService.getService().then(service => {
-                        service.openWorkItem(workItem.id, false);
-                    });
+        var sorted = fields.sort((a: ColumnDefinition, b: ColumnDefinition) => {
+            return a.order - b.order;
+        });
 
-                }
+        var columns = [];
 
-            };
+        sorted.forEach(col => {
+            var definition: any = { text: col.name, width: col.width, index: col.refname };
 
-            //Create the grid in a container element
-            me.Grid = Controls.create<Grids.Grid, Grids.IGridOptions>(Grids.Grid, container, options);
+            if (col.refname == "System.AreaPath") {
+                definition.canSortBy = false;
+            }
+            if (col.refname == "System.Title") {
+                definition.getCellContents = (rowInfo: Grids.IGridRowInfo, dataIndex: number, expandedState: number, level: number, column: Grids.IGridColumn, indentIndex: number, columnOrder: number) => { return me.GetFormattedTitle(column, dataIndex, level, indentIndex); };
+            }
+
+            columns.push(definition);
+        });
+
+        //{ text: "Area Path", width: 200, index: "System.AreaPath", canSortBy: false },
+        //{ text: "Work Item Type", width: 200, index: "System.WorkItemType" },
+        //{ text: "Title", width: 400, index: "System.Title", getCellContents: (rowInfo: Grids.IGridRowInfo, dataIndex: number, expandedState: number, level: number, column: Grids.IGridColumn, indentIndex: number, columnOrder: number) => { return me.GetFormattedTitle(column, dataIndex, level, indentIndex); } },
+        //{ text: "State", width: 100, index: "System.State" },
+        //{ text: "Iteration Path", width: 200, index: "System.IterationPath" },
+        //{ text: "Link", width: 200, index: "System.LinkName" },
+
+
+        return columns;
+    }
+
+    public PopulateGrid(container: JQuery, data: any, paths: AreaPathConfiguration[]) {
+        var me = this;
+
+        var columns = me.GetGridColumns(me.Settings.Fields);
+        if (me.Grid) {
+            me.Grid.dispose();
         }
+
+        var screenHeight = (screen.availHeight * 0.75) + "px";
+        var options: Grids.IGridOptions = {
+            height: screenHeight,
+            width: "100%",
+            columns: columns
+            //[
+            //    { text: "Area Path", width: 200, index: "System.AreaPath", canSortBy: false },
+            //    { text: "Work Item Type", width: 200, index: "System.WorkItemType" },
+            //    { text: "Title", width: 400, index: "System.Title", getCellContents: (rowInfo: Grids.IGridRowInfo, dataIndex: number, expandedState: number, level: number, column: Grids.IGridColumn, indentIndex: number, columnOrder: number) => { return me.GetFormattedTitle(column, dataIndex, level, indentIndex); } },
+            //    { text: "State", width: 100, index: "System.State" },
+            //    { text: "Iteration Path", width: 200, index: "System.IterationPath" },
+            //    { text: "Link", width: 200, index: "System.LinkName" },
+            //]
+            , openRowDetail: (index: number) => {
+                var workItem = me.Grid.getRowData(index);
+                WorkItemServices.WorkItemFormNavigationService.getService().then(service => {
+                    service.openWorkItem(workItem.id, false);
+                });
+            }
+        };
+
+        // Create the grid in a container element
+        me.Grid = Controls.create<Grids.Grid, Grids.IGridOptions>(Grids.Grid, container, options);
         var gridSource = me.BuildGridSource(data.workItems, data.relations, paths);
         me.Grid.setDataSource(new Grids.GridHierarchySource(gridSource));
 
     }
 
-    public BuildPivotOptions(pivotContainer) {
+    public BuildPivotOptions(pivotContainer: JQuery) {
 
         this.CreateDependenciesFilter(pivotContainer);
-        //this.CreateQueryAcrossProjects(pivotContainer);
+        // this.CreateQueryAcrossProjects(pivotContainer);
     }
 
-    public CreateDependenciesFilter(pivotContainer) {
+    public CreateDependenciesFilter(pivotContainer: JQuery) {
         var actual = this.Settings.ShowEmpty;
         var me = this;
         var pivotFilterOptions: Navigation.IPivotFilterOptions = {
@@ -163,8 +201,7 @@ export class DependencyTracker {
 
                 if (item.value == "Yes") {
                     me.Settings.ShowEmpty = true;
-                }
-                else {
+                } else {
                     me.Settings.ShowEmpty = false;
                 }
                 me.DataService.SaveSettings(me.Context, me.Settings);
@@ -175,7 +212,7 @@ export class DependencyTracker {
         return Controls.create<Navigation.PivotFilter, any>(Navigation.PivotFilter, pivotContainer, pivotFilterOptions);
     }
 
-    public CreateQueryAcrossProjects(pivotContainer) {
+    public CreateQueryAcrossProjects(pivotContainer: JQuery) {
         var actual = false;
 
         var pivotFilterOptions: Navigation.IPivotFilterOptions = {
@@ -185,11 +222,10 @@ export class DependencyTracker {
                 { id: "show-yes", text: "yes", value: "Yes", selected: actual },
                 { id: "show-no", text: "no", value: "No", selected: !actual }
             ],
-            change: function (item) {
+            change: (item) => {
                 if (item.value == "Yes") {
                     alert("Yes");
-                }
-                else {
+                } else {
                     alert("No");
                 }
             }
@@ -201,17 +237,6 @@ export class DependencyTracker {
     public BuildMenu(toolbar: any): Menus.MenuBar {
         var me = this;
 
-        //{
-        //    id: "filter.deps",
-        //        title: "Filter Dependencies",
-        //            icon: "icon-settings",
-        //                separator: false,
-        //                    disabled: false,
-        //                        showText: false,
-
-        //        //showHtml: false
-        //    },
-
         var menuOptions: Menus.MenuBarOptions = {
             orientation: "horizontal",
             showIcon: true,
@@ -220,8 +245,8 @@ export class DependencyTracker {
                 { id: "expand-items", title: "Expand", icon: "icon-tree-expand-all", showText: false, groupId: "icon1" },
                 { id: "collapse-items", title: "Collapse", icon: "icon-tree-collapse-all", showText: false, groupId: "icon1" },
                 { id: "select-columns", text: "Column Options", title: "Column Options", showText: true, noIcon: true, disabled: false, groupId: "text" },
-                //{ id: "stop-items", text: "Stop", title: "Stop", showText: true, noIcon: true, disabled: true, groupId: "text" },
-                //{ id: "help-items", text: "Help", title: "Help", showText: true, noIcon: true, groupId: "text" }
+                // { id: "stop-items", text: "Stop", title: "Stop", showText: true, noIcon: true, disabled: true, groupId: "text" },
+                // { id: "help-items", text: "Help", title: "Help", showText: true, noIcon: true, groupId: "text" }
             ],
             executeAction: (args) => {
                 var d = args.get_commandName();
@@ -237,7 +262,6 @@ export class DependencyTracker {
                         me.Grid.expandAll();
                         break;
                     case "select-columns":
-
                         me.SelectColumns();
                         break;
                 }
@@ -250,7 +274,7 @@ export class DependencyTracker {
         return Controls.create<Menus.MenuBar, any>(Menus.MenuBar, toolbar, menuOptions);
     }
 
-    public SelectColumns() {
+    public SelectColumns(): void {
         var me = this;
         VSS.getService(VSS.ServiceIds.Dialog).then((dialogService: IHostDialogService) => {
             var extensionCtx = VSS.getExtensionContext();
@@ -263,12 +287,16 @@ export class DependencyTracker {
                 title: "Column Selection",
                 width: 560,
                 height: 400,
-                getDialogResult: () => { return me.Settings; },
-                okCallback: (result: IDependancySettings) => {
+                getDialogResult: () => {
+                    return dialogModel.GetFieldSelection();
+                },
+                okCallback: (result: ColumnDefinition[]) => {
                     if (dialogModel != null) {
-                        result.Fields = dialogModel.GetSelectedFields();
-                        me.DataService.SaveSettings(me.Context, result);
+
+                        me.Settings.Fields = result;
+                        me.DataService.SaveSettings(me.Context, me.Settings);
                         me.LoadData(me.container, me.Context);
+
                     }
                 }
             };
@@ -290,8 +318,9 @@ export class DependencyTracker {
         });
     }
 
-    public GetFormattedTitle(column: Grids.IGridColumn, dataIndex: number, level: number, indentIndex: number) {
-        var rowData = this.Grid.getRowData(dataIndex);
+    public GetFormattedTitle(column: Grids.IGridColumn, dataIndex: number, level: number, indentIndex: number): JQuery {
+        var me = this;
+        var rowData = me.Grid.getRowData(dataIndex);
 
         var gridCell = $("<div class='grid-cell'/>").width(column.width);
 
@@ -307,9 +336,9 @@ export class DependencyTracker {
 
         var titleHref = $("<a>");
         titleHref.on("click", () => {
-            var wait = this.BuildWaitControl($("#container"));
+            var wait = UIService.UIService.GetWaitControl(DependencyTracker.WaitControlID, me.container);
             wait.startWait();
-            var workItemService = WorkItemServices.WorkItemFormNavigationService.getService().then(service => {
+            WorkItemServices.WorkItemFormNavigationService.getService().then(service => {
                 service.openWorkItem(rowData["id"], false);
 
                 wait.endWait();
@@ -329,21 +358,12 @@ export class DependencyTracker {
     }
 
 
-    public BuildWaitControl(container): StatusIndicator.WaitControl {
 
-        var waitControlOptions: StatusIndicator.IWaitControlOptions = {
-            cancellable: false,
-            message: "Loading...",
-            fade: true
-        };
-
-        return Controls.create(StatusIndicator.WaitControl, container, waitControlOptions);
-    }
 
 
     public LoadWorkItemStates(context: WebContext, callBack: Action<string[]>) {
-        //should we dig around or just hard code ?
-        //!Done !Removed
+        // should we dig around or just hard code ?
+        // !Done !Removed
     }
 
 
@@ -368,18 +388,17 @@ export class DependencyTracker {
     public QueryBacklog(contex: WebContext, areaPaths: AreaPathConfiguration[], backlogTypes: string[]): IPromise<any> {
 
         var defer = $.Deferred<any>();
-        var me = this;
 
-        //create work client
+        // create work client
         var client = WorkItemRestClient.getClient();
 
         var qry: WorkItemContracts.Wiql = {
             query: ""
         };
 
-        var states = ['New', 'Approved', 'Committed'];
+        var states = ["New", "Approved", "Committed"];
 
-        qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states);
+        qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states, this.Settings.Fields);
 
 
         client.queryByWiql(qry, contex.project.name).then(backlogIds => {
@@ -440,7 +459,7 @@ export class DependencyTracker {
         var defer = $.Deferred<any>();
 
         client.getWorkItems(backlogItems, null, asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogWorkItems => {
-            //get relation id's
+            // get relation id's
             var relations = new Array<number>();
 
             backlogWorkItems.forEach((backlogItem, idx, arr) => {
@@ -475,7 +494,6 @@ export class DependencyTracker {
                 defer.resolve(result);
             }
         }, err => {
-            var s = err;
             this.TelemtryClient.trackException(err, "coreClient.getWorkItems");
             defer.reject(err);
         });
@@ -520,12 +538,12 @@ export class DependencyTracker {
     public PopulateFields(workItem: WorkItemContracts.WorkItem, paths: AreaPathConfiguration[]): any[] {
         var values: any[] = [];
 
-        ConfigSettings.FieldList.forEach(field => {
-            //var sanitizedField = field.replace("[", "").replace("]", "");
+        this.Settings.Fields.forEach(field => {
+            // var sanitizedField = field.replace("[", "").replace("]", "");
             values[field.refname] = workItem.fields[field.refname];
         });
 
-        //additional values to keep around
+        // additional values to keep around
         values["url"] = workItem.url;
         values["id"] = workItem.id;
 

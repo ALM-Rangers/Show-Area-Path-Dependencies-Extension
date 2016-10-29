@@ -31,6 +31,7 @@ interface AreaPathConfiguration {
 }
 
 interface ColumnDefinition {
+    order: number;
     name: string;
     refname: string;
     width: number;

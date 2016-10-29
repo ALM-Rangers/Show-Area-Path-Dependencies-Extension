@@ -17,7 +17,7 @@ describe('WiqlHelper', () => {
         var paths: AreaPathConfiguration[] = [{ Path: 'Project', IncludeChildren: false }, { Path: 'Project\\Team 2', IncludeChildren: false }];
         var backlogItems: string[] = ['Product Backlog Item', 'Bug'];
         var backlogState: string[] = ['New', 'Committed', 'In Progress'];
-        var text = WiqlHelper.CreateBacklogWiql(paths, backlogItems, backlogState);
+        var text = WiqlHelper.CreateBacklogWiql(paths, backlogItems, backlogState, ConfigSettings.FieldList);
         expect(text).toBe("select [System.WorkItemType], [System.Title], [System.AreaPath], [System.State], [Microsoft.VSTS.Scheduling.Effort], [System.IterationPath], [System.Tags], [System.NodeName] from WorkItems where( [System.WorkItemType] in ('Product Backlog Item','Bug') and ( [System.AreaPath] = 'Project' or [System.AreaPath] = 'Project\\Team 2' ) and [System.State] in ('New','Committed','In Progress'))", text);
     });
 

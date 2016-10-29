@@ -9,17 +9,17 @@
     "ExtensionsWithNoOutput": [ ".d.ts" ]
   },
   "References": [
-    { "Path": "./sdk/VSS.SDK.min.js" },
+    { "Path": "./sdk/VSS.SDK.js" },
     { "Path": "./node_modules/requirejs/require.js" },
     { "Path": "./node_modules/jquery/dist/jquery.js" },
-    { "Path": "./scripts/infrastructure.ts" },
+    { "Path": "./scripts/Configuration.ts" },
     { "Path": "./scripts/Helpers.ts" },
     { "Path": "./scripts/Configuration.ts" }
   ],
   "Tests": [
     {
       "Includes": [ "*/test/*.ts" ],
-      "Excludes": [ "*.d.ts",  "specrunner.ts" ]
+      "Excludes": [ "*.d.ts", "specrunner.ts" ]
     }
   ]
 }
