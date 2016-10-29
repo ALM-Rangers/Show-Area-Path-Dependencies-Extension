@@ -17,21 +17,25 @@
 
 "use strict";
 import Controls = require("VSS/Controls");
-import TreeView = require("VSS/Controls/TreeView");
-
-import DataService = require("./DataService");
-
 
 import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
 
+import DataService = require("./DataService");
+import UIService = require("./UIService");
+
+
+
 
 export class ConfigurationDialogModel {
+    static WaitControlID = "ConfigurationDialogModelWaitControl";
 
     public Context: WebContext;
     public DataService: DataService.DataService;
     public Settings: IDependancySettings;
     public FieldList: ColumnDefinition[] = [];
     public AvailableFields: WorkItemContracts.WorkItemFieldReference[];
+
+
 
     constructor(context: WebContext) {
         this.Context = context;
@@ -49,6 +53,11 @@ export class ConfigurationDialogModel {
     }
 
     public Load(context: WebContext) {
+
+        var wait = UIService.UIService.GetWaitControl(ConfigurationDialogModel.WaitControlID, $("#container"));
+
+        wait.startWait();
+
         var me = this;
         var available = $("#display-available-list");
         var selected = $("#display-list");
@@ -77,7 +86,7 @@ export class ConfigurationDialogModel {
             var selectedFields = me.FieldList;
             me.AvailableFields = items;
 
-                items.forEach(item => {
+            items.forEach(item => {
                 var fieldReference = selectedFields.filter(field => { return field.refname == item.referenceName; });
                 if (fieldReference.length == 0) {
                     available.append("<option value='" + item.referenceName + "'>" + item.name + "</option>");
@@ -90,6 +99,10 @@ export class ConfigurationDialogModel {
                     selected.append("<option value='" + fieldReference[0].referenceName + "'>" + fieldReference[0].name + "</option>");
                 }
             });
+
+            wait.endWait();
+        },rej=> {
+            wait.endWait();
         });
 
     }
@@ -113,7 +126,7 @@ export class ConfigurationDialogModel {
             if (forward) {
                 var column = me.AvailableFields.filter(item => { return item.referenceName == e.value; });
                 if (column.length >= 0) {
-                    me.FieldList.push({ name: column[0].name, refname: column[0].referenceName, required: false, width:100 });
+                    me.FieldList.push({ name: column[0].name, refname: column[0].referenceName, required: false, width: 100 });
                 }
             } else {
                 me.FieldList = $.grep(me.FieldList, f => { return f.refname == e.value });
@@ -124,11 +137,22 @@ export class ConfigurationDialogModel {
         selectedItems.remove();
     }
 
-    public GetSelectedFields(): ColumnDefinition[] {
+    public GetFieldSelection(): ColumnDefinition[] {
 
-        var selected = $("#display-list");
+        var list = this.FieldList;
 
-        return null;
+        ConfigSettings.FieldList.filter(f => f.required).forEach(requiredItem => {
+            var found = list.filter(l => {
+                return l.refname == requiredItem.refname;
+            });
+
+            if (found.length <= 0) {
+                list.push(requiredItem);
+            }
+
+        });
+
+        return list;
     }
 
 }

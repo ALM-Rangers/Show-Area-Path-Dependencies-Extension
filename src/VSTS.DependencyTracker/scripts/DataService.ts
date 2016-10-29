@@ -21,6 +21,7 @@ import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
 import WorkRestClient = require("TFS/Work/RestClient");
 import Contracts = require("TFS/Core/Contracts");
 
+
 export class DataService {
 
 
@@ -157,12 +158,14 @@ export class DataService {
 
                     defer.resolve(fields.sort((a, b) => { return a.name.localeCompare(b.name); }));
                 });
-            });
+            }, rej => { alert(rej);});
 
         });
 
         return defer.promise();
 
     }
+
+  
 
 }
