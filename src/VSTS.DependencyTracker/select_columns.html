@@ -74,6 +74,22 @@
         .column-options .ui-button-text {
             padding: 2px 0 0 0 !important;
         }
+
+        .column-options .width {
+            width: 3em;
+        }
+
+            .column-options .width.disabled {
+                cursor: default;
+                background-color: #e6e6e6;
+            }
+
+        .column-options .width-container {
+            overflow: hidden;
+            word-break: break-all;
+            padding-left: 2px;
+        }
+
     </style>
 </head>
 <body>
@@ -114,18 +130,25 @@
                     </div>
                     <div class="buttons">
                         <div>
-                            <button title="Move Column Up" disabled="" class="move-up ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                            <button id="moveUp" title="Move Column Up" disabled="" class="move-up ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
                                 <span class="ui-button-text">
                                     <span class="icon icon-up"></span>
                                 </span>
                             </button>
                         </div>
                         <div>
-                            <button title="Move Column Down" disabled="" class="move-down ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                            <button id="moveDown" title="Move Column Down" disabled="" class="move-down ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
                                 <span class="ui-button-text">
                                     <span class="icon icon-down"></span>
                                 </span>
                             </button>
+                        </div>
+                        <br />
+                        <div title="Width" class="width-container">
+                            <label for="column-width">Width</label>
+                        </div>
+                        <div>
+                            <input disabled="" class="width textbox disabled" id="column-width" type="text">
                         </div>
                     </div>
                 </div>

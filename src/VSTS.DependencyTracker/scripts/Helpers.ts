@@ -55,6 +55,13 @@ class WiqlHelper {
     }
 }
 
+class ColumnHelper {
+    static BuildSelectionTitle(name: string, width: number): string {
+        return name + " [" + width + "]";
+    }
+
+}
+
 class RelationHelper {
     static FindIDFromLink(uri: string): number {
 

@@ -85,6 +85,7 @@
     <TypeScriptCompile Include="scripts\TelemetryClient.ts" />
     <TypeScriptCompile Include="scripts\UIService.ts" />
     <TypeScriptCompile Include="sdk\ai.0.21.5-build00175.d.ts" />
+    <TypeScriptCompile Include="test\ColumnHelperSpec.ts" />
     <TypeScriptCompile Include="test\DependencyTrackerSpec.ts" />
     <TypeScriptCompile Include="test\RelationHelperSpec.ts" />
     <TypeScriptCompile Include="test\WiqlHelperSpec.ts" />

@@ -245,8 +245,6 @@ export class DependencyTracker {
                 { id: "expand-items", title: "Expand", icon: "icon-tree-expand-all", showText: false, groupId: "icon1" },
                 { id: "collapse-items", title: "Collapse", icon: "icon-tree-collapse-all", showText: false, groupId: "icon1" },
                 { id: "select-columns", text: "Column Options", title: "Column Options", showText: true, noIcon: true, disabled: false, groupId: "text" },
-                // { id: "stop-items", text: "Stop", title: "Stop", showText: true, noIcon: true, disabled: true, groupId: "text" },
-                // { id: "help-items", text: "Help", title: "Help", showText: true, noIcon: true, groupId: "text" }
             ],
             executeAction: (args) => {
                 var d = args.get_commandName();
@@ -268,7 +266,6 @@ export class DependencyTracker {
             }
 
         };
-
 
         // Create the menubar in a container element
         return Controls.create<Menus.MenuBar, any>(Menus.MenuBar, toolbar, menuOptions);
@@ -300,7 +297,6 @@ export class DependencyTracker {
                     }
                 }
             };
-
 
             dialogService.openDialog(contributionId, dialogOptions).then(dialog => {
                 dialog.getContributionInstance("configuration").then((instance: Config.ConfigurationDialogModel) => {
@@ -400,7 +396,6 @@ export class DependencyTracker {
 
         qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states, this.Settings.Fields);
 
-
         client.queryByWiql(qry, contex.project.name).then(backlogIds => {
             var backlog = new Array<number>();
 
@@ -443,9 +438,12 @@ export class DependencyTracker {
                 }, rejectReason => {
                     this.TelemtryClient.trackException(rejectReason, "QueryBacklog");
                     defer.reject(rejectReason);
+                    //TODO: remove
+                    alert(rejectReason);
                 });
             }
         }, rej => {
+             //TODO: remove
             alert(rej);
         });
 

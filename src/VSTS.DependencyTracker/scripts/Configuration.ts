@@ -10,6 +10,7 @@
 //---------------------------------------------------------------------
 
 class ConfigSettings {
+    static DefaultColumnWidth: number = 100;
     static RequirementCategory: string = "Microsoft.RequirementCategory";
     static IncludeBug: boolean = true;
     static BugTypeName: string = "Bug";
