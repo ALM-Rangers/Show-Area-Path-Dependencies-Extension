@@ -11,6 +11,7 @@
 
 /// <reference path="../typings/tsd.d.ts" />
 /// <reference path="Configuration.ts" />
+
 "use strict";
 import Controls = require("VSS/Controls");
 import Grids = require("VSS/Controls/Grids");
@@ -71,9 +72,6 @@ export class DependencyTracker {
                 me.LoadData(me.container, this.Context);
             });
         });
-
-        // TODO: remove....
-        // control.endWait();
     }
 
 
@@ -104,7 +102,7 @@ export class DependencyTracker {
 
                 },
                     rej => {
-                        alert(rej);
+                        me.TelemtryClient.trackException(rej, "DependencyTracker.LoadData");
                         waitControl.endWait();
                     });
             });
@@ -134,14 +132,6 @@ export class DependencyTracker {
             columns.push(definition);
         });
 
-        //{ text: "Area Path", width: 200, index: "System.AreaPath", canSortBy: false },
-        //{ text: "Work Item Type", width: 200, index: "System.WorkItemType" },
-        //{ text: "Title", width: 400, index: "System.Title", getCellContents: (rowInfo: Grids.IGridRowInfo, dataIndex: number, expandedState: number, level: number, column: Grids.IGridColumn, indentIndex: number, columnOrder: number) => { return me.GetFormattedTitle(column, dataIndex, level, indentIndex); } },
-        //{ text: "State", width: 100, index: "System.State" },
-        //{ text: "Iteration Path", width: 200, index: "System.IterationPath" },
-        //{ text: "Link", width: 200, index: "System.LinkName" },
-
-
         return columns;
     }
 
@@ -158,14 +148,6 @@ export class DependencyTracker {
             height: screenHeight,
             width: "100%",
             columns: columns
-            //[
-            //    { text: "Area Path", width: 200, index: "System.AreaPath", canSortBy: false },
-            //    { text: "Work Item Type", width: 200, index: "System.WorkItemType" },
-            //    { text: "Title", width: 400, index: "System.Title", getCellContents: (rowInfo: Grids.IGridRowInfo, dataIndex: number, expandedState: number, level: number, column: Grids.IGridColumn, indentIndex: number, columnOrder: number) => { return me.GetFormattedTitle(column, dataIndex, level, indentIndex); } },
-            //    { text: "State", width: 100, index: "System.State" },
-            //    { text: "Iteration Path", width: 200, index: "System.IterationPath" },
-            //    { text: "Link", width: 200, index: "System.LinkName" },
-            //]
             , openRowDetail: (index: number) => {
                 var workItem = me.Grid.getRowData(index);
                 WorkItemServices.WorkItemFormNavigationService.getService().then(service => {
@@ -184,6 +166,7 @@ export class DependencyTracker {
     public BuildPivotOptions(pivotContainer: JQuery) {
 
         this.CreateDependenciesFilter(pivotContainer);
+        // TODO: Maybe in teh next update
         // this.CreateQueryAcrossProjects(pivotContainer);
     }
 
@@ -274,14 +257,15 @@ export class DependencyTracker {
     public SelectColumns(): void {
         var me = this;
         VSS.getService(VSS.ServiceIds.Dialog).then((dialogService: IHostDialogService) => {
-            var extensionCtx = VSS.getExtensionContext();
+            var extensionContext = VSS.getExtensionContext();
+
             // Build absolute contribution ID for dialogContent
-            var contributionId = extensionCtx.publisherId + "." + extensionCtx.extensionId + ".configuration";
+            var contributionId = extensionContext.publisherId + "." + extensionContext.extensionId + ".configuration";
             var dialogModel: Config.ConfigurationDialogModel;
 
             // Show dialog
             var dialogOptions: IHostDialogOptions = {
-                title: "Column Selection",
+                title: "Column Options",
                 width: 560,
                 height: 400,
                 getDialogResult: () => {
@@ -307,8 +291,6 @@ export class DependencyTracker {
                     dialogModel = instance;
 
                     dialog.updateOkButton(true);
-
-
                 });
             });
         });
@@ -352,18 +334,12 @@ export class DependencyTracker {
 
         return gridCell;
     }
-
-
-
-
-
+    
     public LoadWorkItemStates(context: WebContext, callBack: Action<string[]>) {
-        // should we dig around or just hard code ?
+        // TODO: should we dig around or just hard code ?
         // !Done !Removed
     }
-
-
-
+    
     public LoadWorkItemRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
         var client = WorkItemRestClient.getClient();
@@ -378,8 +354,6 @@ export class DependencyTracker {
         });
         return defer.promise();
     }
-
-
 
     public QueryBacklog(contex: WebContext, areaPaths: AreaPathConfiguration[], backlogTypes: string[]): IPromise<any> {
 
@@ -436,15 +410,12 @@ export class DependencyTracker {
 
                     defer.resolve(result);
                 }, rejectReason => {
-                    this.TelemtryClient.trackException(rejectReason, "QueryBacklog");
+                    this.TelemtryClient.trackException(rejectReason, "DependencyTracker.QueryBacklog.QAll");
                     defer.reject(rejectReason);
-                    //TODO: remove
-                    alert(rejectReason);
                 });
             }
         }, rej => {
-             //TODO: remove
-            alert(rej);
+            this.TelemtryClient.trackException(rej, "DependencyTracker.QueryBacklog.queryByWiql");
         });
 
         return defer.promise();
@@ -492,7 +463,7 @@ export class DependencyTracker {
                 defer.resolve(result);
             }
         }, err => {
-            this.TelemtryClient.trackException(err, "coreClient.getWorkItems");
+            this.TelemtryClient.trackException(err, "DependencyTracker.GetWorkItemDetails.getWorkItems");
             defer.reject(err);
         });
 
@@ -537,7 +508,6 @@ export class DependencyTracker {
         var values: any[] = [];
 
         this.Settings.Fields.forEach(field => {
-            // var sanitizedField = field.replace("[", "").replace("]", "");
             values[field.refname] = workItem.fields[field.refname];
         });
 
@@ -546,7 +516,6 @@ export class DependencyTracker {
         values["id"] = workItem.id;
 
         values["owned"] = this.IsInPath(workItem.fields["System.AreaPath"], paths);
-
 
         return values;
     }
@@ -560,7 +529,6 @@ export class DependencyTracker {
                 return workItemPath == areaPath.Path;
             }
         });
-
 
         return found.length > 0;
     }

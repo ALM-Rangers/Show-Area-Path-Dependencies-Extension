@@ -15,6 +15,8 @@ class ConfigSettings {
     static IncludeBug: boolean = true;
     static BugTypeName: string = "Bug";
     static ResultSize: number = 10;
+
+    //Default fields
     static FieldList: ColumnDefinition[] = [
         { name: "Work Item Type", refname: "System.WorkItemType", width: 200, required: true, order : 1 },
         { name: "Title", refname: "System.Title", width: 400, required: true, order: 2 },

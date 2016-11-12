@@ -43,13 +43,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".vscode\tasks.json" />
-    <Content Include="css\StyleSheet1.css" />
+    <Content Include="css\ColumnOptions.css" />
     <Content Include="sdk\q.js" />
     <Content Include="select_columns.html" />
     <Content Include="web.config" />
     <Content Include="chutzpah.json" />
     <Content Include="packages.config" />
-    <Content Include="vss-extension-dev.json" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
@@ -90,8 +89,10 @@
     <TypeScriptCompile Include="test\RelationHelperSpec.ts" />
     <TypeScriptCompile Include="test\WiqlHelperSpec.ts" />
     <TypeScriptCompile Include="test\WitdColourHelperSpec.ts" />
-    <TypeScriptCompile Include="typings\jasmine\jasmine.d.ts" />
+    <TypeScriptCompile Include="typings\assertion-error\assertion-error.d.ts" />
+    <TypeScriptCompile Include="typings\chai\chai.d.ts" />
     <TypeScriptCompile Include="typings\jquery\jquery.d.ts" />
+    <TypeScriptCompile Include="typings\mocha\mocha.d.ts" />
     <TypeScriptCompile Include="typings\q\q.d.ts" />
     <TypeScriptCompile Include="typings\knockout\knockout.d.ts" />
     <TypeScriptCompile Include="typings\requirejs\require.d.ts" />

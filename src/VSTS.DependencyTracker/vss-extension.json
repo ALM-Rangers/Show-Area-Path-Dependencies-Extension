@@ -60,7 +60,26 @@
       "addressable": true
     },
     {
+      "path": "select_columns.html",
+      "addressable": true
+    },
+    {
       "path": "scripts/Configuration.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "scripts/UIService.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "scripts/ConfigurationDialog.js",
+      "addressable": true,
+      "contentType": "application/javascript"
+    },
+    {
+      "path": "scripts/DataService.js",
       "addressable": true,
       "contentType": "application/javascript"
     },

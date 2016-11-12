@@ -1,5 +1,4 @@
-﻿
-//---------------------------------------------------------------------
+﻿//---------------------------------------------------------------------
 // <copyright file="DataService.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -7,13 +6,12 @@
 //    TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
 //    PARTICULAR PURPOSE AND NONINFRINGEMENT.
 // </copyright>
-// <summary>Data Servie Proxy to retrieve and update settings and configuration</summary>
+// <summary>Data Service Proxy to retrieve and update settings and configuration</summary>
 //---------------------------------------------------------------------
 
 /// <reference path="../typings/tsd.d.ts" />
 /// <reference path="Configuration.ts" />
 /// <reference path="TelemetryClient.ts" />
-
 
 "use strict";
 import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
@@ -21,11 +19,7 @@ import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
 import WorkRestClient = require("TFS/Work/RestClient");
 import Contracts = require("TFS/Core/Contracts");
 
-
 export class DataService {
-
-
-
     public FindAllRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
         var client = WorkItemRestClient.getClient();
@@ -62,7 +56,7 @@ export class DataService {
                 defer.resolve(settings);
             });
         }, rej => {
-            alert("SaveSettings : " + rej);
+            TelemetryClient.getClient().trackException("SaveSettings error: " + rej, "DataService.SaveSettings");
         });
         return defer;
     }
@@ -86,8 +80,7 @@ export class DataService {
             timer.Stop();
             TelemetryClient.getClient().trackMetric("DataService.GetWorkItemTypes", timer.GetDurationInMilliseconds());
         }, err => {
-            var s = err;
-            TelemetryClient.getClient().trackException(err, "coreClient.getWorkItemTypeCategories");
+            TelemetryClient.getClient().trackException(err, "DataService.GetWorkItemTypes");
         });
 
         return defer.promise();
@@ -158,14 +151,11 @@ export class DataService {
 
                     defer.resolve(fields.sort((a, b) => { return a.name.localeCompare(b.name); }));
                 });
-            }, rej => { alert(rej);});
+            }, rej => {
+                TelemetryClient.getClient().trackException(rej, "DataService.GetWorkItemFields");
+            });
 
         });
-
         return defer.promise();
-
     }
-
-  
-
 }

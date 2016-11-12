@@ -1,4 +1,6 @@
-﻿//---------------------------------------------------------------------
+﻿
+
+//---------------------------------------------------------------------
 // <copyright file="DependencyTrackerSpec.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -9,13 +11,24 @@
 // <summary>Testing the DependencyTracker class</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="../typings/tsd.d.ts" />
+/// <reference path="../typings/vss/vss.d.ts" />
+/// <reference path="../typings/vss/tfs.d.ts" />
 /// <reference path="../scripts/Helpers.ts" />
-/// <reference path="../typings/jasmine/jasmine.d.ts" />
+/// <reference path="../typings/mocha/mocha.d.ts" />
+/// <reference path="../typings/chai/chai.d.ts" />
 
 "use strict";
 import Dep = require("../scripts/DependencyTracker");
+
+import Controls = require("VSS/Controls");
 import Grids = require("VSS/Controls/Grids");
+
+import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
+import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
+import WorkItemServices = require("TFS/WorkItemTracking/Services");
+
+import Menus = require("VSS/Controls/Menus");
+import Navigation = require("VSS/Controls/Navigation");
 
 
 describe('DependencyTracker', () => {
@@ -32,9 +45,9 @@ describe('DependencyTracker', () => {
 
         var gridCols = tracker.GetGridColumns(cols);
 
-        expect(gridCols.length).toBe(5);
-        expect(gridCols[0].text).toBe("Col 1");
-        expect(gridCols[1].text).toBe("Col 2");
-        expect(gridCols[4].text).toBe("Col 5");
+        chai.expect(gridCols.length).eq(5);
+        chai.expect(gridCols[0].text).eq("Col 1");
+        chai.expect(gridCols[1].text).eq("Col 2");
+        chai.expect(gridCols[4].text).eq("Col 5");
     });
 });

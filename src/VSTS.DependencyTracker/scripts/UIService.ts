@@ -14,10 +14,10 @@
 
 
 "use strict";
-import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
-import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
-import WorkRestClient = require("TFS/Work/RestClient");
-import Contracts = require("TFS/Core/Contracts");
+//import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
+//import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
+//import WorkRestClient = require("TFS/Work/RestClient");
+//import Contracts = require("TFS/Core/Contracts");
 
 import Controls = require("VSS/Controls");
 import StatusIndicator = require("VSS/Controls/StatusIndicator");

@@ -1,19 +1,20 @@
-﻿
-//---------------------------------------------------------------------
-// <copyright file="DataService.ts">
+﻿//---------------------------------------------------------------------
+// <copyright file="Configut=ConfigurationDialog.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
 //    ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
 //    TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
 //    PARTICULAR PURPOSE AND NONINFRINGEMENT.
 // </copyright>
-// <summary>Data Servie Proxy to retrieve and update settings and configuration</summary>
+// <summary>
+// Model for the selection and setting op columns and their widths. 
+// Interacts with the select_column.html page
+// < /summary>
 //---------------------------------------------------------------------
 
 /// <reference path="../typings/tsd.d.ts" />
 /// <reference path="Configuration.ts" />
 /// <reference path="TelemetryClient.ts" />
-
 
 "use strict";
 import Controls = require("VSS/Controls");
@@ -32,12 +33,10 @@ export class ConfigurationDialogModel {
     public FieldList: ColumnDefinition[] = [];
     public AvailableFields: WorkItemContracts.WorkItemFieldReference[];
 
-
-
     constructor(context: WebContext) {
         this.Context = context;
-
     }
+
     public SetDataService(dataService: DataService.DataService) {
         this.DataService = dataService;
     }
@@ -145,14 +144,6 @@ export class ConfigurationDialogModel {
 
             }
         }
-
-        //var $op = view.lstSelectedColumns.find(':selected')
-        //if ($op.length) {
-        //    (direction == 'up') ?
-        //        $op.first().prev().before($op) :
-        //        $op.last().next().after($op);
-
-
     }
 
     static UpdateSelectionButtonState(control: JQuery, button: JQuery) {
@@ -165,6 +156,7 @@ export class ConfigurationDialogModel {
             button.attr("disabled", "disabled");
         }
     }
+
     static UpdateOrderButtonStates(selection: JQuery, buttons: JQuery[]) {
         var selectedItems = selection.find("option:selected");
         if (selectedItems.length == 1) {
@@ -178,7 +170,6 @@ export class ConfigurationDialogModel {
                 button.attr("disabled", "disabled");
             });
         }
-
     }
 
     public UpdateSelectedItemWidth() {
@@ -247,7 +238,13 @@ export class ConfigurationDialogModel {
             if (forward) {
                 var column = me.AvailableFields.filter(item => { return item.referenceName == e.value; });
                 if (column.length >= 0) {
-                    me.FieldList.push({ name: column[0].name, refname: column[0].referenceName, required: false, width: 100, order: me.FieldList.length + 1 });
+                    var maxOrder = 0;
+                    me.FieldList.forEach(item => {
+                        if (item.order > maxOrder) {
+                            maxOrder = item.order;
+                        }
+                    });
+                    me.FieldList.push({ name: column[0].name, refname: column[0].referenceName, required: false, width: 100, order: maxOrder +1 });
                 }
                 displayText = ColumnHelper.BuildSelectionTitle(e.text, ConfigSettings.DefaultColumnWidth);
             } else {
@@ -258,7 +255,6 @@ export class ConfigurationDialogModel {
                     item.order = counter;
                 });
             }
-
             target.append("<option value='" + e.value + "'>" + displayText + "</option>");
         });
 
@@ -277,10 +273,8 @@ export class ConfigurationDialogModel {
             if (found.length <= 0) {
                 list.push(requiredItem);
             }
-
         });
 
         return list;
     }
-
 }

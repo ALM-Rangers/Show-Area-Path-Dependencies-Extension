@@ -59,7 +59,6 @@ class ColumnHelper {
     static BuildSelectionTitle(name: string, width: number): string {
         return name + " [" + width + "]";
     }
-
 }
 
 class RelationHelper {
@@ -71,7 +70,6 @@ class RelationHelper {
 
         return parseInt(id);
     }
-
 }
 
 class WitdColourHelper {
@@ -85,7 +83,6 @@ class WitdColourHelper {
         colourMap["Epic"] = "#FF7B00";
         colourMap["Task"] = "#F2CB1D";
         colourMap["Bug"] = "#CC293D";
-
 
         if (colourMap[workItemTypeName]) {
             return colourMap[workItemTypeName];
