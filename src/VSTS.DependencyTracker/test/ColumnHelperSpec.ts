@@ -1,5 +1,5 @@
 ﻿//---------------------------------------------------------------------
-// <copyright file="WitdColourHelperSpec.ts">
+// <copyright file="ColumnHelperSpec.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
 //    ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
@@ -13,15 +13,12 @@
 /// <reference path="../typings/mocha/mocha.d.ts" />
 /// <reference path="../typings/chai/chai.d.ts" />
 
-describe('WitdColourHelper', () => {
-    it('ResolveColour_With_ValidKey', () => {
-        var witdName = "User Story";
-        var colour = WitdColourHelper.ResolveColour(witdName);
-        chai.expect(colour).eq("#009CCC");
-    });
-    it('ResolveColour_With_InValidKey', () => {
-        var witdName = "Blah";
-        var colour = WitdColourHelper.ResolveColour(witdName);
-        chai.expect(colour).eq("");
+describe('ColumnHelper', () => {
+    it('ColumnTitle', () => {
+        var fieldName = "My Field";
+        var width = 100;
+        var title = ColumnHelper.BuildSelectionTitle(fieldName, width);
+        chai.expect(title).eq("My Field [100]");
     });
 });
+

@@ -11,12 +11,13 @@
  //---------------------------------------------------------------------
 
 /// <reference path="../scripts/Helpers.ts" />
-/// <reference path="../typings/jasmine/jasmine.d.ts" />
+/// <reference path="../typings/mocha/mocha.d.ts" />
+/// <reference path="../typings/chai/chai.d.ts" />
 
 describe('RelationHelper', () => {
     it('FindIDFromLink', () => {
         var uri = "http://blha/blah/blah/405"
         var id = RelationHelper.FindIDFromLink(uri);
-        expect(id).toBe(405);
+        chai.expect(id).eq(405);
     });
 });

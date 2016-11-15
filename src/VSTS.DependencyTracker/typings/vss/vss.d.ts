@@ -1,10 +1,11 @@
-// Type definitions for Microsoft Visual Studio Services v101.20160627.0901
+// Type definitions for Microsoft Visual Studio Services v106.20161010.0629
 // Project: https://www.visualstudio.com/integrate/extensions/overview
 // Definitions by: Microsoft <vsointegration@microsoft.com>
 
-/// <reference path='../knockout/knockout.d.ts' />
-/// <reference path='../jquery/jquery.d.ts' />
-/// <reference path='../q/q.d.ts' />
+   /// <reference path='../knockout/knockout.d.ts' />
+   /// <reference path='../jquery/jquery.d.ts' />
+   /// <reference path='../q/q.d.ts' />
+   /// <reference path='../requirejs/require.d.ts' />
 
 //----------------------------------------------------------
 // Common interfaces specific to WebPlatform area
@@ -215,17 +216,6 @@ interface IWebAccessPluginBase {
 declare var _builtInBases: IWebAccessPluginBase[];
 declare var _bases: IWebAccessPluginBase[];
 
-interface IRequire {
-    (moduleName: string): any;
-    (moduleNames: string[], moduleFunc: Function): any;
-    config: (config: any, shouldOverwrite?: boolean) => void;
-}
-
-interface IDefine {
-    (moduleNames: string[], moduleFunc: Function): any;
-    (id: string, moduleNames: string[], moduleFunc: Function): any;
-}
-
 interface IDisposable {
     dispose(): void;
 }
@@ -235,8 +225,8 @@ interface IKeyValuePair<TKey, TValue> {
     value: TValue;
 }
 
-declare var require: IRequire;
-declare var define: IDefine;
+declare var require: Require;
+declare var define: RequireDefine;
 //----------------------------------------------------------
 // Common interfaces specific to WebPlatform area
 //----------------------------------------------------------
@@ -832,7 +822,7 @@ interface IContributedMenuSource {
     *
     * @param actionContext Menu-specific context information
     */
-    execute(actionContext: any);
+    execute?(actionContext: any);
 }
 
 /**
@@ -883,12 +873,17 @@ interface IContributedMenuItem {
     /**
     * If this menu item has a sub menu, these are the contributed child items
     */
-    childItems?: IContributedMenuItem[];
+    childItems?: IContributedMenuItem[] | IPromise<IContributedMenuItem[]>;
 
     /**
     * Id of the menu group that this item should be placed in.
     */
     groupId?: string;
+
+    /**
+    * If specified, create an <a> tag around this menu item with the specified href.
+    */
+    href?: string;
 
     /**
     * Method invoked when the menu item is clicked.
@@ -945,24 +940,66 @@ interface IContributedTab {
 }
 
 /**
+ * A navigation element which appears in the header section.
  * @exemptedapi
  */
-interface HubResult extends Hub {
-    hubs?: Hub[];
-
+interface IContributedHub extends Hub {
+    /**
+     * Specifies the target hub id where the children are attached to the target hub.
+     */
     targetHubId?: string;
-    getHubs?(context: any): Hub[] | IPromise<Hub[]>;
+
+    /**
+     * Hubs resolved by this container hub.
+     */
+    children: IContributedHub[] | (()=> IPromise<IContributedHub[]>);
+
+    /**
+     * Specifies whether a separator is displayed before this hub or not.
+     */
+    beforeSeparator?: boolean;
+    
+    /**
+     * Specifies whether a separator is displayed after this hub or not.
+     */
+    afterSeparator?: boolean;
+
+    /**
+     * Specifies whether this hub is a default hub or not (rendered differently).
+     */
+    isDefault?: boolean;
+
+    /**
+    * If true, the hub element should be rendered as a disabled element.
+    */
+    disabled: boolean;
 }
 
 /**
+* Context passed to hubs-providers in calls to get hubs
+*/
+interface IHubsProviderContext {
+    /**
+    * The contribution id of the owning control
+    */
+    contributionId: string;
+
+    /**
+    * Method that can be called when hubs change in order to update the owning control
+    */
+    refreshDelegate?: Function;
+}
+
+/**
+ * The contract for hub providers which are expected to provide a container hub.
  * @exemptedapi
  */
 interface IHubsProvider {
-    getHubs(context: any): HubResult | IPromise<HubResult>;
+    /**
+     * Container hub specified by this provider. Container decides where to display child hubs in the header.
+     */
+    getContainerHub(context: IHubsProviderContext): IContributedHub | IPromise<IContributedHub>;
 }
-//----------------------------------------------------------
-// Copyright (C) Microsoft Corporation. All rights reserved.
-//----------------------------------------------------------
 
 //----------------------------------------------------------
 // Generated file, DO NOT EDIT.
@@ -990,6 +1027,25 @@ interface AccessPointModel {
     * Full url
     */
     uri: string;
+}
+
+interface AcquisitionOperation {
+    /**
+    * State of the the AcquisitionOperation for the current user
+    */
+    operationState: any;
+    /**
+    * AcquisitionOperationType: install, request, buy, etc...
+    */
+    operationType: any;
+    /**
+    * Optional reason to justify current state. Typically used with Disallow state.
+    */
+    reason: string;
+    /**
+    * List of reasons indicating why the operation is not allowed.
+    */
+    reasons: any[];
 }
 
 /**
@@ -1121,6 +1177,100 @@ interface ContextIdentifier {
 }
 
 /**
+* A feature that can be enabled or disabled
+*/
+interface ContributedFeature {
+    /**
+    * If true, the feature is enabled unless overridden at some scope
+    */
+    defaultState: boolean;
+    /**
+    * Rules for setting the default value if not specified by any setting/scope. Evaluated in order until a rule returns an Enabled or Disabled state (not Undefined)
+    */
+    defaultValueRules: ContributedFeatureDefaultValueRule[];
+    /**
+    * The description of the feature
+    */
+    description: string;
+    /**
+    * The full contribution id of the feature
+    */
+    id: string;
+    /**
+    * The friendly name of the feature
+    */
+    name: string;
+    /**
+    * The scopes/levels at which settings can set the enabled/disabled state of this feature
+    */
+    scopes: ContributedFeatureSettingScope[];
+}
+
+/**
+* A rules for setting the default value of a feature if not specified by any setting/scope
+*/
+interface ContributedFeatureDefaultValueRule {
+    /**
+    * Name of the IContributedFeatureValuePlugin to run
+    */
+    name: string;
+    /**
+    * Properties to feed to the IContributedFeatureValuePlugin
+    */
+    properties: any;
+}
+
+/**
+* The current state of a feature within a given scope
+*/
+declare enum ContributedFeatureEnabledValue {
+    /**
+    * The state of the feature is not set for the specified scope
+    */
+    Undefined = -1,
+    /**
+    * The feature is disabled at the specified scope
+    */
+    Disabled = 0,
+    /**
+    * The feature is enabled at the specified scope
+    */
+    Enabled = 1,
+}
+
+/**
+* The scope to which a feature setting applies
+*/
+interface ContributedFeatureSettingScope {
+    /**
+    * The name of the settings scope to use when reading/writing the setting
+    */
+    settingScope: string;
+    /**
+    * Whether this is a user-scope or this is a host-wide (all users) setting
+    */
+    userScoped: boolean;
+}
+
+/**
+* A contributed feature/state pair
+*/
+interface ContributedFeatureState {
+    /**
+    * The full contribution id of the feature
+    */
+    featureId: string;
+    /**
+    * The scope at which this state applies
+    */
+    scope: ContributedFeatureSettingScope;
+    /**
+    * The current state of this feature
+    */
+    state: ContributedFeatureEnabledValue;
+}
+
+/**
 * Page context configuration that can be contributed by remote services (different VSTS services delivering content to the page)
 */
 interface ContributedServiceContext {
@@ -1225,6 +1375,10 @@ interface ContributionConstraint {
     * Properties that are fed to the contribution filter class
     */
     properties: any;
+    /**
+    * Constraints can be optionally be applied to one or more of the relationships defined in the contribution. If no relationships are defined then all relationships are associated with the constraint. This means the default behaviour will elimiate the contribution from the tree completely if the constraint is applied.
+    */
+    relationships: string[];
 }
 
 /**
@@ -1431,6 +1585,7 @@ interface DiagnosticsContext {
     * True if the CDN feature flag is enabled and the user has not disabled CDN with a cookie.
     */
     cdnEnabled: boolean;
+    clientLogLevel: number;
     debugMode: boolean;
     isDevFabric: boolean;
     sessionId: string;
@@ -1510,6 +1665,11 @@ interface ExtensionAuditLogEntry {
     * Represents the user who made the change
     */
     updatedBy: any;
+}
+
+interface ExtensionAuthorization {
+    id: string;
+    scopes: string[];
 }
 
 /**
@@ -1619,6 +1779,10 @@ interface ExtensionManifest {
     */
     contributionTypes: ContributionType[];
     /**
+    * List of explicit demands required by this extension
+    */
+    demands: string[];
+    /**
     * Collection of endpoints that get called when particular extension events occur
     */
     eventCallbacks: ExtensionEventCallbackCollection;
@@ -1674,6 +1838,33 @@ interface ExtensionRequest {
     resolvedBy: any;
 }
 
+interface ExtensionRequestedEvent {
+    /**
+    * Name of the account for which the extension was requested
+    */
+    accountName: string;
+    /**
+    * The extension request object
+    */
+    extensionRequest: ExtensionRequest;
+    /**
+    * Gallery host url
+    */
+    galleryHostUrl: string;
+    /**
+    * Link to view the extension details page
+    */
+    itemUrl: string;
+    /**
+    * The extension which has been requested
+    */
+    publishedExtension: any;
+    /**
+    * Linkk to view the extension request
+    */
+    requestUrl: string;
+}
+
 /**
 * Represents the state of an extension request
 */
@@ -1698,6 +1889,7 @@ declare enum ExtensionRequestState {
 interface ExtensionState {
     extensionName: string;
     flags: ExtensionStateFlags;
+    installationIssues: InstalledExtensionStateIssue[];
     lastUpdated: Date;
     /**
     * The time at which the version was last checked
@@ -1743,6 +1935,18 @@ declare enum ExtensionStateFlags {
     * Extension is currently in an error state
     */
     Error = 64,
+    /**
+    * Extension scopes have changed and the extension requires re-authorization
+    */
+    NeedsReauthorization = 128,
+    /**
+    * Error performing auto-upgrade. For example, if the new version has demands not supported the extension cannot be auto-upgraded.
+    */
+    AutoUpgradeError = 256,
+    /**
+    * Extension is currently in a warning state, that can cause a degraded experience. The degraded experience can be caused for example by some installation issues detected such as implicit demands not supported.
+    */
+    Warning = 512,
 }
 
 interface FeatureAvailabilityContext {
@@ -1778,6 +1982,7 @@ interface HostContext {
 */
 interface Hub {
     builtIn: boolean;
+    hidden: boolean;
     groupId: string;
     icon: string;
     id: string;
@@ -1793,9 +1998,11 @@ interface Hub {
 interface HubGroup {
     builtIn: boolean;
     hasHubs: boolean;
+    hidden: boolean;
     icon: string;
     id: string;
     name: string;
+    nonCollapsible: boolean;
     order: any;
     uri: string;
 }
@@ -1808,6 +2015,7 @@ interface HubsContext {
     hubGroups: HubGroup[];
     hubGroupsCollectionContributionId: string;
     hubs: Hub[];
+    pinningPreferences: PinningPreferences;
     selectedHubGroupId: string;
     selectedHubId: string;
 }
@@ -1857,6 +2065,7 @@ interface InstalledExtension {
     baseUri: string;
     contributions: Contribution[];
     contributionTypes: ContributionType[];
+    demands: string[];
     eventCallbacks: ExtensionEventCallbackCollection;
     /**
     * The friendly extension id for this extension - unique for a given publisher.
@@ -1913,9 +2122,45 @@ interface InstalledExtensionState {
     */
     flags: ExtensionStateFlags;
     /**
+    * List of installation issues
+    */
+    installationIssues: InstalledExtensionStateIssue[];
+    /**
     * The time at which this installation was last updated
     */
     lastUpdated: Date;
+}
+
+/**
+* Represents an installation issue
+*/
+interface InstalledExtensionStateIssue {
+    /**
+    * The error message
+    */
+    message: string;
+    /**
+    * Source of the installation issue, for example  "Demands"
+    */
+    source: string;
+    /**
+    * Installation issue type (Warning, Error)
+    */
+    type: InstalledExtensionStateIssueType;
+}
+
+/**
+* Installation issue type (Warning, Error)
+*/
+declare enum InstalledExtensionStateIssueType {
+    /**
+    * Represents an installation warning, for example an implicit demand not supported
+    */
+    Warning = 0,
+    /**
+    * Represents an installation error, for example an explicit demand not supported
+    */
+    Error = 1,
 }
 
 /**
@@ -2101,12 +2346,19 @@ interface PageContext {
     webContext: WebContext;
 }
 
+interface PinningPreferences {
+    pinnedHubGroupIds: string[];
+    pinnedHubs: { [key: string]: string[]; };
+    unpinnedHubGroupIds: string[];
+    unpinnedHubs: { [key: string]: string[]; };
+}
+
 /**
 * A request for an extension (to be installed or have a license assigned)
 */
 interface RequestedExtension {
     /**
-    * THe unique name of the extensions
+    * The unique name of the extension
     */
     extensionName: string;
     /**
@@ -2191,8 +2443,6 @@ interface SupportedExtension {
 interface TeamContext {
     id: string;
     name: string;
-    userIsAdmin: boolean;
-    userIsMember: boolean;
 }
 
 /**
@@ -2559,8 +2809,11 @@ declare module VSS {
     function getAppToken(): IPromise<ISessionToken>;
     /**
     * Requests the parent window to resize the container for this extension based on the current extension size.
+    *
+    * @param width Optional width, defaults to scrollWidth
+    * @param height Optional height, defaults to scrollHeight
     */
-    function resize(): void;
+    function resize(width?: number, height?: number): void;
 }
 declare module "VSS/Accounts/Contracts" {
 export interface Account {
@@ -2919,7 +3172,25 @@ export class AccountsHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class AccountsHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class AccountsHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class AccountsHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class AccountsHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class AccountsHttpClient extends AccountsHttpClient3 {
@@ -2928,9 +3199,9 @@ export class AccountsHttpClient extends AccountsHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return AccountsHttpClient2_2
+ * @return AccountsHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): AccountsHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): AccountsHttpClient2_3;
 }
 declare module "VSS/Adapters/Knockout" {
 import Controls = require("VSS/Controls");
@@ -3132,6 +3403,7 @@ export module ToolNames {
     var TeamBuild: string;
     var TestManagement: string;
     var Requirements: string;
+    var Hyperlink: string;
     var Legacy: string;
     var CodeSense: string;
     var Git: string;
@@ -3221,9 +3493,11 @@ export enum DelegatedAppTokenType {
 }
 export interface WebSessionToken {
     appId: string;
+    extensionName: string;
     force: boolean;
     name: string;
     namedTokenId: string;
+    publisherName: string;
     token: string;
     tokenType: DelegatedAppTokenType;
     validTo: Date;
@@ -3261,7 +3535,25 @@ export class AuthenticationHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class AuthenticationHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class AuthenticationHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class AuthenticationHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class AuthenticationHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class AuthenticationHttpClient extends AuthenticationHttpClient3 {
@@ -3343,7 +3635,7 @@ export class BasicAuthTokenManager implements IAuthTokenManager<string> {
     getAuthorizationHeader(sessionToken: string): string;
 }
 export class BearerAuthTokenManager implements IAuthTokenManager<string> {
-    private _token;
+    protected _token: string;
     constructor(token: string);
     /**
     * Get the auth token to use for this request.
@@ -3356,7 +3648,15 @@ export class BearerAuthTokenManager implements IAuthTokenManager<string> {
      * @return the value to use for the Authorization header in a request.
      */
     getAuthorizationHeader(sessionToken: string): string;
-    private _getTokenHeader();
+    protected _getTokenHeader(): string;
+}
+export class WebSessionTokenManager extends BearerAuthTokenManager {
+    private _sessionToken;
+    constructor(sessionToken: Authentication_Contracts_Async.WebSessionToken);
+    /**
+    * Get the auth token to use for this request.
+    */
+    getAuthToken(refresh?: boolean): IPromise<string>;
 }
 /**
 * Exposes the default auth token manager for account-level tokens
@@ -3389,6 +3689,8 @@ export function getAppToken(appId: string, name?: string, force?: boolean): IPro
 export function getAuthTokenManager(namedTokenId?: string): IAuthTokenManager<any>;
 }
 declare module "VSS/Bundling" {
+import Q = require("q");
+import VSS = require("VSS/VSS");
 /**
  * Gets the content length (in bytes) of all Javascript bundles included on the page
  */
@@ -3404,6 +3706,13 @@ export function getBundledCssContentSize(): number;
  */
 export function getBundleSize(bundleUrl: string): number;
 /**
+ * Compresses the specified paths by replacing recurring directory names with '*' character.
+ *
+ * @param paths List of files to compress.
+ * @returns {string[]}
+ */
+export function compressPaths(paths: string[]): string[];
+/**
  * Inject all the CSS and Scripts specified in the bundle collection into the page
  *
  * @param bundles Collection of CSS and script bundles
@@ -3418,13 +3727,23 @@ export function injectBundles(bundles: DynamicBundlesCollection, rootBundleUrl?:
 * @param moduleNames An array of AMD modules to asynchronously require
 * @param callback Method to invoke once the modules have been resolved.
 */
-export function requireModules(moduleNames: string[], callback: Function): void;
+export function requireModules(moduleNames: string[], options?: VSS.IModuleLoadOptions): Q.Promise<any>;
+/**
+* Issue a require statement for the specified modules and invoke the given callback method once available.
+* This is a wrapper around the requireJS 'require' statement which ensures that the missing modules are
+* pulled in via the minimum number of resource requests.
+*
+* @param moduleNames An array of AMD modules to asynchronously require
+* @param callback Method to invoke once the modules have been resolved.
+*/
+export function loadModules(moduleNames: string[], options?: VSS.IModuleLoadOptions): Q.Promise<void>;
 }
 declare module "VSS/Commerce/Contracts" {
 export enum AccountProviderNamespace {
     VisualStudioOnline = 0,
     AppInsights = 1,
     Marketplace = 2,
+    OnPremise = 3,
 }
 /**
  * Encapsulates azure specific plan structure, using a publisher defined publisher name, offer name, and plan name These are all specified by the publisher and can vary from other meta data we store about the extension internally therefore need to be tracked seperately for purposes of interacting with Azure
@@ -3492,6 +3811,81 @@ export enum BillingProvider {
     SelfManaged = 0,
     AzureStoreManaged = 1,
 }
+export interface ConnectedServer {
+    /**
+     * Hosted AccountId associated with the connected server
+     */
+    accountId: string;
+    /**
+     * Hosted AccountName associated with the connected server
+     */
+    accountName: string;
+    /**
+     * Object used to create credentials to call from OnPrem to hosted service.
+     */
+    authorization: ConnectedServerAuthorization;
+    /**
+     * OnPrem server id associated with the connected server
+     */
+    serverId: string;
+    /**
+     * OnPrem server associated with the connected server
+     */
+    serverName: string;
+    /**
+     * SpsUrl of the hosted account that the onrepm server has been connected to.
+     */
+    spsUrl: string;
+    /**
+     * The id of the subscription used for purchase
+     */
+    subscriptionId: string;
+    /**
+     * OnPrem target host associated with the connected server.  Typically the collection host id
+     */
+    targetId: string;
+    /**
+     * OnPrem target associated with the connected server.
+     */
+    targetName: string;
+}
+/**
+ * Provides data necessary for authorizing the connecter server using OAuth 2.0 authentication flows.
+ */
+export interface ConnectedServerAuthorization {
+    /**
+     * Gets or sets the endpoint used to obtain access tokens from the configured token service.
+     */
+    authorizationUrl: string;
+    /**
+     * Gets or sets the client identifier for this agent.
+     */
+    clientId: string;
+    /**
+     * Gets or sets the public key used to verify the identity of this connected server.
+     */
+    publicKey: string;
+}
+/**
+ * Represents the public key portion of an RSA asymmetric key.
+ */
+export interface ConnectedServerPublicKey {
+    /**
+     * Gets or sets the exponent for the public key.
+     */
+    exponent: number[];
+    /**
+     * Gets or sets the modulus for the public key.
+     */
+    modulus: number[];
+}
+/**
+ * Encapsulates the state of offer meter definitions and purchases
+ */
+export interface ICommercePackage {
+    offerMeters: OfferMeter[];
+    offerSubscriptions: OfferSubscription[];
+}
 /**
  * Information about a resource associated with a subscription.
  */
@@ -3536,6 +3930,10 @@ export interface IOfferSubscription {
      * Gets the value indicating whether the puchase is canceled.
      */
     isPurchaseCanceled: boolean;
+    /**
+     * Gets the value indicating whether current meter was purchased while the meter is still in trial
+     */
+    isPurchasedDuringTrial: boolean;
     /**
      * Gets or sets a value indicating whether this instance is trial or preview.
      */
@@ -3730,6 +4128,28 @@ export enum MeterState {
     Retired = 2,
     Deleted = 3,
 }
+export enum MinimumRequiredServiceLevel {
+    /**
+     * No service rights. The user cannot access the account
+     */
+    None = 0,
+    /**
+     * Default or minimum service level
+     */
+    Express = 1,
+    /**
+     * Premium service level - either by purchasing on the Azure portal or by purchasing the appropriate MSDN subscription
+     */
+    Advanced = 2,
+    /**
+     * Only available to a specific set of MSDN Subscribers
+     */
+    AdvancedPlus = 3,
+    /**
+     * Stakeholder service level
+     */
+    Stakeholder = 4,
+}
 export interface OfferMeter {
     /**
      * Gets or sets the value of absolute maximum quantity for the resource
@@ -3780,6 +4200,10 @@ export interface OfferMeter {
      */
     includedQuantity: number;
     /**
+     * Flag to identify whether the meter is First Party or Third Party based on BillingEntity If the BillingEntity is SelfManaged, the Meter is First Party otherwise its a Third Party Meter
+     */
+    isFirstParty: boolean;
+    /**
      * Gets or sets the value of maximum quantity for the resource
      */
     maximumQuantity: number;
@@ -3787,6 +4211,10 @@ export interface OfferMeter {
      * Meter Id.
      */
     meterId: number;
+    /**
+     * Gets or sets the minimum required access level for the meter.
+     */
+    minimumRequiredAccessLevel: MinimumRequiredServiceLevel;
     /**
      * Name of the resource
      */
@@ -3909,6 +4337,10 @@ export interface OfferSubscription {
      * Gets the value indicating whether the puchase is canceled.
      */
     isPurchaseCanceled: boolean;
+    /**
+     * Gets the value indicating whether current meter was purchased while the meter is still in trial
+     */
+    isPurchasedDuringTrial: boolean;
     /**
      * Gets or sets a value indicating whether this instance is trial or preview.
      */
@@ -4133,6 +4565,7 @@ export var TypeInfo: {
             "visualStudioOnline": number;
             "appInsights": number;
             "marketplace": number;
+            "onPremise": number;
         };
     };
     BillingProvider: {
@@ -4141,6 +4574,7 @@ export var TypeInfo: {
             "azureStoreManaged": number;
         };
     };
+    ICommercePackage: any;
     IOfferSubscription: any;
     ISubscriptionAccount: any;
     ISubscriptionResource: any;
@@ -4171,6 +4605,15 @@ export var TypeInfo: {
             "active": number;
             "retired": number;
             "deleted": number;
+        };
+    };
+    MinimumRequiredServiceLevel: {
+        enumValues: {
+            "none": number;
+            "express": number;
+            "advanced": number;
+            "advancedPlus": number;
+            "stakeholder": number;
         };
     };
     OfferMeter: any;
@@ -4286,7 +4729,7 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      */
     getUsage(startTime: Date, endTime: Date, timeSpan: any): IPromise<Contracts.IUsageEventAggregate[]>;
     /**
-     * [Preview API] Unlinks an account from the subsription.
+     * [Preview API] Unlinks an account from the subscription.
      *
      * @param {string} subscriptionId - The subscription identifier.
      * @param {Contracts.AccountProviderNamespace} providerNamespaceId - The provider namespace identifier.
@@ -4314,12 +4757,13 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      */
     getSubscriptionAccount(providerNamespaceId: Contracts.AccountProviderNamespace, accountId: string): IPromise<Contracts.ISubscriptionAccount>;
     /**
-     * [Preview API] Get list of azure subscription where user is admin- co-admin under tenant or valid azure subscriptions for purchase
+     * [Preview API] Get list of azure subscriptions where user is admin or co-admin
      *
      * @param {string} subscriptionId
+     * @param {boolean} queryAcrossTenants
      * @return IPromise<Contracts.ISubscriptionAccount[]>
      */
-    getAzureSubscriptionForUser(subscriptionId?: string): IPromise<Contracts.ISubscriptionAccount[]>;
+    getAzureSubscriptionForUser(subscriptionId?: string, queryAcrossTenants?: boolean): IPromise<Contracts.ISubscriptionAccount[]>;
     /**
      * [Preview API] Get list of azure subscription where user is admin- co-admin under tenant or valid azure subscriptions for purchase (passing accountId to get this information for AAD calls)
      *
@@ -4433,9 +4877,10 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      *
      * @param {Contracts.OfferSubscription} offerSubscription
      * @param {string} cancelReason
+     * @param {string} billingTarget
      * @return IPromise<void>
      */
-    cancelOfferSubscription(offerSubscription: Contracts.OfferSubscription, cancelReason: string): IPromise<void>;
+    cancelOfferSubscription(offerSubscription: Contracts.OfferSubscription, cancelReason: string, billingTarget: string): IPromise<void>;
     /**
      * [Preview API] Returns an enumerable of instances of price for the specified offer meter in each region available
      *
@@ -4466,7 +4911,7 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      * [Preview API] Returns resource information like status, committed quantity, included quantity, reset date, etc.
      *
      * @param {string} resourceName
-     * @param {string} resourceNameResolveMethod - Method of how to retreive the resource
+     * @param {string} resourceNameResolveMethod - Method of how to retrieve the resource
      * @return IPromise<Contracts.OfferMeter>
      */
     getOfferMeter(resourceName: string, resourceNameResolveMethod: string): IPromise<Contracts.OfferMeter>;
@@ -4505,11 +4950,42 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
  */
 export class CommerceHttpClient3 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * [Preview API]
+     *
+     * @return IPromise<Contracts.ICommercePackage>
+     */
+    getCommercePackage(): IPromise<Contracts.ICommercePackage>;
+    /**
+     * [Preview API]
+     *
+     * @param {Contracts.ConnectedServer} connectedServer
+     * @return IPromise<Contracts.ConnectedServer>
+     */
+    createConnectedServer(connectedServer: Contracts.ConnectedServer): IPromise<Contracts.ConnectedServer>;
+}
+/**
+ * @exemptedapi
+ */
+export class CommerceHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 /**
  * @exemptedapi
  */
 export class CommerceHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class CommerceHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class CommerceHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class CommerceHttpClient extends CommerceHttpClient3 {
@@ -4518,9 +4994,9 @@ export class CommerceHttpClient extends CommerceHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return CommerceHttpClient2_2
+ * @return CommerceHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): CommerceHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): CommerceHttpClient2_3;
 }
 declare module "VSS/Common/Constants/Platform" {
 export module ContributedServiceContextData {
@@ -4564,7 +5040,6 @@ export module WebAccessCustomerIntelligenceConstants {
 * Constants used for VSSF\WebPlatform Feature Availability flags Note: This should only be flags consumed in platform-level typescript code or controllers.
 */
 export module WebPlatformFeatureFlags {
-    var VisualStudioServicesContribution: string;
     var VisualStudioServicesContributionUnSecureBrowsers: string;
     var ClientSideErrorLogging: string;
 }
@@ -4632,6 +5107,16 @@ export interface InputDescriptor {
      * Localized name which can be shown as a label for the subscription input
      */
     name: string;
+    /**
+     * Custom properties for the input which can be used by the service provider
+     */
+    properties: {
+        [key: string]: any;
+    };
+    /**
+     * Underlying data type for the input value. When this value is specified, InputMode, Validation and Values are optional.
+     */
+    type: string;
     /**
      * Gets whether this input is included in the default generated action description.
      */
@@ -5094,6 +5579,7 @@ export interface DiagnosticsContext {
     * True if the CDN feature flag is enabled and the user has not disabled CDN with a cookie.
     */
     cdnEnabled: boolean;
+    clientLogLevel: number;
     debugMode: boolean;
     isDevFabric: boolean;
     sessionId: string;
@@ -5161,6 +5647,7 @@ export interface HostContext {
 */
 export interface Hub {
     builtIn: boolean;
+    hidden: boolean;
     groupId: string;
     icon: string;
     id: string;
@@ -5175,9 +5662,11 @@ export interface Hub {
 export interface HubGroup {
     builtIn: boolean;
     hasHubs: boolean;
+    hidden: boolean;
     icon: string;
     id: string;
     name: string;
+    nonCollapsible: boolean;
     order: any;
     uri: string;
 }
@@ -5189,6 +5678,7 @@ export interface HubsContext {
     hubGroups: HubGroup[];
     hubGroupsCollectionContributionId: string;
     hubs: Hub[];
+    pinningPreferences: PinningPreferences;
     selectedHubGroupId: string;
     selectedHubId: string;
 }
@@ -5410,6 +5900,16 @@ export interface PageContext {
     */
     webContext: WebContext;
 }
+export interface PinningPreferences {
+    pinnedHubGroupIds: string[];
+    pinnedHubs: {
+        [key: string]: string[];
+    };
+    unpinnedHubGroupIds: string[];
+    unpinnedHubs: {
+        [key: string]: string[];
+    };
+}
 /**
 * Holds a lookup of urls for different services (at different host levels)
 */
@@ -5440,8 +5940,6 @@ export interface StylesheetReference {
 export interface TeamContext {
     id: string;
     name: string;
-    userIsAdmin: boolean;
-    userIsMember: boolean;
 }
 /**
 * Data contract to represent a given team foundation service host (account, collection, deployment)
@@ -5676,6 +6174,9 @@ export var TypeInfo: {
         };
     };
     PageContext: {
+        fields: any;
+    };
+    PinningPreferences: {
         fields: any;
     };
     ServiceLocations: {
@@ -6008,6 +6509,17 @@ export function processContributedServiceContext(context: Contracts_Platform.Con
 declare module "VSS/Contributions/Contracts" {
 import VSS_Common_Contracts = require("VSS/WebApi/Contracts");
 import VSS_Gallery_Contracts = require("VSS/Gallery/Contracts");
+export enum AcquisitionAssignmentType {
+    None = 0,
+    /**
+     * Just assign for me
+     */
+    Me = 1,
+    /**
+     * Assign for all users in the account
+     */
+    All = 2,
+}
 export interface AcquisitionOperation {
     /**
      * State of the the AcquisitionOperation for the current user
@@ -6021,6 +6533,20 @@ export interface AcquisitionOperation {
      * Optional reason to justify current state. Typically used with Disallow state.
      */
     reason: string;
+    /**
+     * List of reasons indicating why the operation is not allowed.
+     */
+    reasons: AcquisitionOperationDisallowReason[];
+}
+export interface AcquisitionOperationDisallowReason {
+    /**
+     * User-friendly message clarifying the reason for disallowance
+     */
+    message: string;
+    /**
+     * Type of reason for disallowance - AlreadyInstalled, UnresolvedDemand, etc.
+     */
+    type: string;
 }
 export enum AcquisitionOperationState {
     /**
@@ -6145,6 +6671,10 @@ export interface ContributionConstraint {
      * Properties that are fed to the contribution filter class
      */
     properties: any;
+    /**
+     * Constraints can be optionally be applied to one or more of the relationships defined in the contribution. If no relationships are defined then all relationships are associated with the constraint. This means the default behaviour will elimiate the contribution from the tree completely if the constraint is applied.
+     */
+    relationships: string[];
 }
 /**
  * Description about a property of a contribution type
@@ -6272,6 +6802,35 @@ export interface DataProviderResult {
     resolvedProviders: ResolvedDataProvider[];
 }
 /**
+ * Contract for handling the extension acquisition process
+ */
+export interface ExtensionAcquisitionRequest {
+    /**
+     * How the item is being assigned
+     */
+    assignmentType: AcquisitionAssignmentType;
+    /**
+     * The id of the subscription used for purchase
+     */
+    billingId: string;
+    /**
+     * The marketplace id (publisherName.extensionName) for the item
+     */
+    itemId: string;
+    /**
+     * The type of operation, such as install, request, purchase
+     */
+    operationType: AcquisitionOperationType;
+    /**
+     * Additional properties which can be added to the request.
+     */
+    properties: any;
+    /**
+     * How many licenses should be purchased
+     */
+    quantity: number;
+}
+/**
  * Represents the state of an extension request
  */
 export interface ExtensionAuditAction {
@@ -6313,6 +6872,10 @@ export interface ExtensionAuditLogEntry {
      * Represents the user who made the change
      */
     updatedBy: VSS_Common_Contracts.IdentityRef;
+}
+export interface ExtensionAuthorization {
+    id: string;
+    scopes: string[];
 }
 /**
  * Represents a single collection for extension data documents
@@ -6413,6 +6976,10 @@ export interface ExtensionManifest {
      */
     contributionTypes: ContributionType[];
     /**
+     * List of explicit demands required by this extension
+     */
+    demands: string[];
+    /**
      * Collection of endpoints that get called when particular extension events occur
      */
     eventCallbacks: ExtensionEventCallbackCollection;
@@ -6465,6 +7032,32 @@ export interface ExtensionRequest {
      * Represents the user who resolved the request
      */
     resolvedBy: VSS_Common_Contracts.IdentityRef;
+}
+export interface ExtensionRequestedEvent {
+    /**
+     * Name of the account for which the extension was requested
+     */
+    accountName: string;
+    /**
+     * The extension request object
+     */
+    extensionRequest: ExtensionRequest;
+    /**
+     * Gallery host url
+     */
+    galleryHostUrl: string;
+    /**
+     * Link to view the extension details page
+     */
+    itemUrl: string;
+    /**
+     * The extension which has been requested
+     */
+    publishedExtension: VSS_Gallery_Contracts.PublishedExtension;
+    /**
+     * Linkk to view the extension request
+     */
+    requestUrl: string;
 }
 export enum ExtensionRequestState {
     /**
@@ -6525,6 +7118,18 @@ export enum ExtensionStateFlags {
      * Extension is currently in an error state
      */
     Error = 64,
+    /**
+     * Extension scopes have changed and the extension requires re-authorization
+     */
+    NeedsReauthorization = 128,
+    /**
+     * Error performing auto-upgrade. For example, if the new version has demands not supported the extension cannot be auto-upgraded.
+     */
+    AutoUpgradeError = 256,
+    /**
+     * Extension is currently in a warning state, that can cause a degraded experience. The degraded experience can be caused for example by some installation issues detected such as implicit demands not supported.
+     */
+    Warning = 512,
 }
 /**
  * Represents a VSTS extension along with its installation state
@@ -6584,16 +7189,47 @@ export interface InstalledExtensionState {
      */
     flags: ExtensionStateFlags;
     /**
+     * List of installation issues
+     */
+    installationIssues: InstalledExtensionStateIssue[];
+    /**
      * The time at which this installation was last updated
      */
     lastUpdated: Date;
+}
+/**
+ * Represents an installation issue
+ */
+export interface InstalledExtensionStateIssue {
+    /**
+     * The error message
+     */
+    message: string;
+    /**
+     * Source of the installation issue, for example  "Demands"
+     */
+    source: string;
+    /**
+     * Installation issue type (Warning, Error)
+     */
+    type: InstalledExtensionStateIssueType;
+}
+export enum InstalledExtensionStateIssueType {
+    /**
+     * Represents an installation warning, for example an implicit demand not supported
+     */
+    Warning = 0,
+    /**
+     * Represents an installation error, for example an explicit demand not supported
+     */
+    Error = 1,
 }
 /**
  * A request for an extension (to be installed or have a license assigned)
  */
 export interface RequestedExtension {
     /**
-     * THe unique name of the extensions
+     * The unique name of the extension
      */
     extensionName: string;
     /**
@@ -6647,6 +7283,13 @@ export interface SupportedExtension {
     version: string;
 }
 export var TypeInfo: {
+    AcquisitionAssignmentType: {
+        enumValues: {
+            "none": number;
+            "me": number;
+            "all": number;
+        };
+    };
     AcquisitionOperation: any;
     AcquisitionOperationState: {
         enumValues: {
@@ -6683,6 +7326,7 @@ export var TypeInfo: {
         };
     };
     ContributionType: any;
+    ExtensionAcquisitionRequest: any;
     ExtensionAuditLog: any;
     ExtensionAuditLogEntry: any;
     ExtensionFlags: {
@@ -6693,6 +7337,7 @@ export var TypeInfo: {
     };
     ExtensionManifest: any;
     ExtensionRequest: any;
+    ExtensionRequestedEvent: any;
     ExtensionRequestState: {
         enumValues: {
             "open": number;
@@ -6711,10 +7356,20 @@ export var TypeInfo: {
             "versionCheckError": number;
             "trusted": number;
             "error": number;
+            "needsReauthorization": number;
+            "autoUpgradeError": number;
+            "warning": number;
         };
     };
     InstalledExtension: any;
     InstalledExtensionState: any;
+    InstalledExtensionStateIssue: any;
+    InstalledExtensionStateIssueType: {
+        enumValues: {
+            "warning": number;
+            "error": number;
+        };
+    };
     RequestedExtension: any;
 };
 }
@@ -6738,6 +7393,21 @@ export interface IExtensionHost {
     */
     getLoadPromise(): IPromise<any>;
 }
+/** The resize options for a contribution host */
+export enum ResizeOptions {
+    /**
+     * Default resize option which means both height and width resizing are allowed
+     */
+    Default = 0,
+    /**
+     * The height of the host cannot be changed
+     */
+    FixedHeight = 2,
+    /**
+     * The width of the host cannot be changed
+     */
+    FixedWidth = 4,
+}
 /**
 * Options for the host control to toggle progress indication or error/warning handling.
 */
@@ -6755,6 +7425,23 @@ export interface IContributionHostBehavior {
     * If unspecified, The default timeout period is used.
     */
     slowWarningDurationMs?: number;
+    /**
+     * The resize options for the host. By default both height and width and be resized but this can be changed to only allow one direction of resizing
+     */
+    resizeOptions?: ResizeOptions;
+}
+/**
+ * Contains the new width and height of the contribution host after it is resized
+ */
+export interface IExternalContentHostResizedEventArgs {
+    width: number;
+    height: number;
+    host: IExtensionHost;
+}
+export module ExternalContentHostEvents {
+    var SLOW_LOAD_WARNING: string;
+    var EXTENSION_MESSAGE_RESIZED: string;
+    var EXTENSION_HOST_RESIZED: string;
 }
 /**
 * Instantiate a contributed control through an internal or external contribution host.
@@ -6821,6 +7508,8 @@ export function getBackgroundHost(contribution: Contributions_Contracts.Contribu
 */
 export function getBackgroundInstance<T>(contribution: Contributions_Contracts.Contribution | string, instanceId: string, contextData?: any, webContext?: Contracts_Platform.WebContext, timeout?: number, timeoutMessage?: string, uriReplacementProperties?: any, uriPropertyName?: string): IPromise<T>;
 }
+declare module "VSS/Contributions/PageEvents" {
+}
 declare module "VSS/Contributions/RestClient" {
 import Contracts = require("VSS/Contributions/Contracts");
 import VSS_WebApi = require("VSS/WebApi/RestClient");
@@ -6870,7 +7559,25 @@ export class ContributionsHttpClient3 extends CommonMethods2_2To3 {
 /**
  * @exemptedapi
  */
+export class ContributionsHttpClient2_3 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class ContributionsHttpClient2_2 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class ContributionsHttpClient2_1 extends CommonMethods2_1To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class ContributionsHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class ContributionsHttpClient extends ContributionsHttpClient3 {
@@ -6879,9 +7586,9 @@ export class ContributionsHttpClient extends ContributionsHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return ContributionsHttpClient2_2
+ * @return ContributionsHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): ContributionsHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): ContributionsHttpClient2_3;
 }
 declare module "VSS/Contributions/Services" {
 import Contributions_Contracts = require("VSS/Contributions/Contracts");
@@ -6913,6 +7620,12 @@ export enum ContributionQueryOptions {
     IncludeDirectTargets = 2,
     IncludeRecursiveTargets = 4,
     IncludeAll = 7,
+    /**
+    * This flag indicates to only query contributions that are already cached by the local service - through
+    * the contributions sent down in the page via JSON island data, or already fetched by a REST request. No
+    * REST call will be made when this flag is specified.
+    */
+    LocalOnly = 8,
 }
 /**
 * Method used to filter contributions as part of a contribution query call
@@ -7009,7 +7722,7 @@ export class ExtensionService extends Service.VssService {
     * @param extensionId The extension id (e.g. 'ms.vss-testmanager-web') to check
     */
     isExtensionActive(extensionId: string): IPromise<boolean>;
-    private _resolveContributions(deferred, contributions);
+    private _resolveContributions(contributions);
     private _getUnqueriedContributions(ids);
     private _getPendingLoadPromises(ids);
     private _getLoadedContributions(ids, queryOptions, contributionType, queryCallback?);
@@ -7030,6 +7743,14 @@ export class ExtensionService extends Service.VssService {
      * @param targetId
      */
     private _registerContributionTarget(contribution, targetId);
+    /**
+     * Get contributions of the specified type that have already been loaded and cached by this service.
+     * This avoids a REST call to query contributions - only looking at contributions seeded on the page
+     * via JSON island data or those already fetched by a prior REST call.
+     *
+     * @param contributionType The full id of the contribution type
+     */
+    getLoadedContributionsOfType(contributionType: string): IPromise<Contributions_Contracts.Contribution[]>;
 }
 /**
 * Delegate for web page data resolution plugins. Allows plugins to be notified when
@@ -7037,26 +7758,49 @@ export class ExtensionService extends Service.VssService {
 */
 export interface WebPageDataResolutionPlugin {
     /**
-    * @param key The key of the data
+    * @param contributionId The contribution id of the data provider
     * @param value The new value of the data
-    * @param existingValue The existing value for the same entry before any data was received
-    * @returns The value to store for this entry. undefined return value indicates to store the new value
+    * @returns The value to store for this entry. undefined return value indicates to store the new value. Promises will be resolved before storing.
     */
-    (key: string, newValue: any, existingValue: any): any;
+    (contributionId: string, newValue: any): any;
+}
+/**
+* An enum representing the way that a data provider's data was populated
+*/
+export enum WebPageDataSource {
+    /**
+    * The data provider entry came from JSON island data in the page source
+    */
+    JsonIsland = 0,
+    /**
+    * The data provider entry came from a REST call to resolve the provider
+    */
+    RestCall = 1,
+    /**
+    * The data provider entry was cached from localStorage
+    */
+    LocalStorage = 2,
 }
 /**
 * Service for obtaining web page data from contributed data providers
 */
 export class WebPageDataService extends Service.VssService {
+    private static MAX_CACHE_SCOPES;
     private static _resolveDataPlugins;
     private _initializationPromise;
     private _localData;
+    private _localDataSource;
     private _resolvedProviders;
     private _contributionPromises;
+    private _contributionIdsByDataType;
     private _ensureInitialized();
-    private _handleDataProviderResult(result, contributions);
-    private _compatServiceContextPlugin(key, newValue, existingValue);
-    private _mergeDataValueResult(key, originalResult, pluginResult, existingValue, allowPromise);
+    private _handleDataProviderResult(result, contributions, source);
+    private _storeDataProviderData(contributionId, originalResult, pluginResult, caching);
+    private _getLocalStorageCacheScope(caching);
+    private _getLocalStorageCacheEntry(storageEntryName);
+    private _isDataExpired(contribution);
+    private _getCachedDataProviderValue(contribution);
+    private _setCachedDataProviderValue(contributionId, value, caching);
     /**
     * Add a plugin handler that gets called when data with the given key has been sent from the server
     *
@@ -7073,17 +7817,47 @@ export class WebPageDataService extends Service.VssService {
     /**
     * Get web page data that was contributed from the given contribution
     *
-    * @param key The data provider key
+    * @param contributionId The data provider key
     * @param contractMetadata Optional contract metadata to use to deserialize the object
     */
-    getPageData<T>(key: string, contractMetadata?: Serialization.ContractMetadata): T;
+    getPageData<T>(contributionId: string, contractMetadata?: Serialization.ContractMetadata): T;
+    /**
+     * Gets the source from which a data provider's data was populated (JSON island data, REST call, localStorage, etc.)
+     *
+     * @param key The data provider key (contribution id)
+     */
+    getPageDataSource(contributionId: string): WebPageDataSource;
+    /**
+     * Get the page data entries from all data provider contributions with the given dataType property.
+     *
+     * @param dataType Value of the dataType property in the data provider contribution's properties
+     * @param contractMetadata Optional contract metadata to use to deserialize the returned values.
+     */
+    getPageDataByDataType<T>(dataType: string, contractMetadata?: Serialization.ContractMetadata): IDictionaryStringTo<T>;
     /**
     * Ensure that all data providers have been resolved for all of the given data-provider contributions
     *
     * @param contributions The data provider contributions to resolve
+    * @param refreshIfExpired If true, force a server request to re-populate the data provider data if the data has expired.  Default is it is always expired.
     */
-    ensureDataProvidersResolved(contributions: Contributions_Contracts.Contribution[]): IPromise<any>;
+    ensureDataProvidersResolved(contributions: Contributions_Contracts.Contribution[], refreshIfExpired?: boolean): IPromise<any>;
     private fetchPageDataForService(serviceInstanceId, contributions);
+    /**
+     * Get page data from a data provider contribution that is cached, optionally queueing an update of the data
+     * after reading from the cache
+     *
+     * @param cachedDataProviderContributionId Id of the data provider which caches data in localStorage
+     * @param primaryDataProviderContributionId Optional contribution id of a data provider to use if it exists. The cached data will not be used or updated if this exists.
+     * @param refreshCache If true and data was read from the cache, queue up a request to update it.
+     * @param contractMetadata Optional contract metadata to use when deserializing the JSON island data
+     */
+    getCachedPageData<T>(cachedDataProviderContributionId: string, primaryDataProviderContributionId?: string, refreshCache?: boolean, contractMetadata?: Serialization.ContractMetadata, reloadCallback?: IResultCallback): T;
+    /**
+     * Always reloads provider data by queuing up a new request
+     *
+     * @param cachedDataProviderContributionId Id of the data provider
+     */
+    reloadCachedProviderData(cachedDataProviderContributionId: string, reloadCallback?: IResultCallback): void;
 }
 /**
  * Provides helper functions for extensions-related types.
@@ -7184,6 +7958,7 @@ export interface EnhancementOptions {
     id?: number | string;
     prepend?: boolean;
     change?: Function;
+    ariaLabel?: string;
 }
 export class Enhancement<TOptions> {
     static ENHANCEMENTS_DATA_KEY: string;
@@ -7609,6 +8384,14 @@ export class BaseComboBehavior {
     dispose(): void;
     setMode(value: any): void;
     canType(): boolean;
+    /**
+     * Get value for aria-autocomplete attribute of parent.
+     */
+    getAriaAutocomplete(): string;
+    /**
+     * Get additional text to use to label the control for screen reader users.
+     */
+    getAriaDescription(): string;
     getValue<TValue>(): TValue;
     getDropPopup<TDropPopup extends BaseComboDropPopup>(): TDropPopup;
     getDataSource<TDataSource extends Controls.BaseDataSource>(): TDataSource;
@@ -7726,6 +8509,7 @@ export class BaseComboDropPopup extends Controls.BaseControl implements IBaseCom
      */
     getSelectedIndex(): number;
     getSelectedValue(): string;
+    getSelectedItem(): JQuery;
     setSelectedValue(value: string): void;
     selectNext(page?: boolean): boolean;
     selectPrev(page?: boolean): boolean;
@@ -7751,6 +8535,7 @@ export interface IComboOptions {
     id?: string;
     /**
      * Type of the combo. It can be 'list', 'date-time', 'multi-value', 'tree' or 'treeSearch'.
+     * Refer to ComboTypeOptionsConstants for type value.
      * @defaultvalue "list"
      */
     type?: string;
@@ -7849,6 +8634,44 @@ export interface IComboOptions {
      * Options passed to the ComboDropPopup
      */
     dropOptions?: IComboDropOptions;
+    /**
+     * Placeholder text shown on input.
+     */
+    placeholderText?: string;
+    /**
+     * Called when the drop popup hides.
+     * Return true to close drop popup.
+     */
+    dropHide?: (dropPopup: BaseComboDropPopup) => boolean;
+    /**
+     * Only set the HTML title attribute if the contents overflow the visible area.
+     */
+    setTitleOnlyOnOverflow?: boolean;
+}
+/**
+* Constant for Combo type options
+*/
+export module ComboTypeOptionsConstants {
+    /**
+    * list type
+    */
+    var ListType: string;
+    /**
+    * date time type
+    */
+    var DateTimeType: string;
+    /**
+    * multi value type
+    */
+    var MultiValueType: string;
+    /**
+    * tree type
+    */
+    var TreeType: string;
+    /**
+    * tree search type
+    */
+    var TreeSearchType: string;
 }
 export interface IComboDropOptions {
     /**
@@ -7903,6 +8726,10 @@ export interface IComboDropOptions {
      */
     getItemContents?: (item: string) => any;
     /**
+     * Only set the HTML title attribute if the contents overflow the visible area.
+     */
+    setTitleOnlyOnOverflow?: boolean;
+    /**
      * DEPRECATED - Alternate renderer for a drop popup item
      */
     createItem?: (index: any) => JQuery;
@@ -7911,15 +8738,16 @@ export interface IComboDropOptions {
  * @publicapi
  */
 export class ComboO<TOptions extends IComboOptions> extends Controls.Control<TOptions> {
+    static invalidAttribute: string;
     static enhancementTypeName: string;
     static registerBehavior(behaviorMode: any, behaviorType: any): void;
     static attachBehavior(combo: any, options?: any): any;
     protected _input: JQuery;
     protected _currentText: string;
     protected _blockBlur: boolean;
-    private _dropPopup;
     private _dropButton;
     private _behavior;
+    private _ariaDescription;
     private _onInputFocusInProgress;
     /**
      * @param options
@@ -8050,6 +8878,10 @@ export class ComboO<TOptions extends IComboOptions> extends Controls.Control<TOp
      * @publicapi
      */
     setInvalid(value: boolean): void;
+    /**
+     * Return true if the combo is in valid state. Otherwise return false.
+     */
+    isValid(): Boolean;
     private _ensureBehavior();
     private _decorate();
     private _updateStyles();
@@ -8088,6 +8920,8 @@ export class ComboO<TOptions extends IComboOptions> extends Controls.Control<TOp
      * @return
      */
     private _onInputKeyUp(e?);
+    protected updateAriaAttributes(isDropVisible?: boolean): void;
+    protected updateAriaActiveDescendant(): void;
 }
 export class Combo extends ComboO<IComboOptions> {
 }
@@ -8117,6 +8951,7 @@ export class ComboListDropPopup extends BaseComboDropPopup {
     getSelectedIndex(): number;
     getSelectedValue(): string;
     setSelectedValue(value: any): void;
+    getSelectedItem(): JQuery;
     getDataSource<TDataSource extends Controls.BaseDataSource>(): TDataSource;
     /**
      * Update internal list view to display current data
@@ -8125,7 +8960,7 @@ export class ComboListDropPopup extends BaseComboDropPopup {
 }
 export class ComboListBehavior extends BaseComboBehavior {
     private _enableAutoFill;
-    private _maxItemLength;
+    protected _maxItemLength: number;
     constructor(combo: any, options?: any);
     initialize(): void;
     setSource(source: any): void;
@@ -8236,6 +9071,7 @@ export interface IDateTimeComboOptions extends IComboOptions {
 export class DatePanel extends Controls.BaseControl {
     private _date;
     private _selectedDate;
+    private _$selectedItem;
     /**
      * @param options
      */
@@ -8248,6 +9084,7 @@ export class DatePanel extends Controls.BaseControl {
     selectDate(date: Date): void;
     setSelectedDate(date: Date): void;
     getSelectedDate(): Date;
+    getSelectedItem(): JQuery;
     private _draw(date, focusElementClass?);
     private _drawCalendarTable(date);
     /**
@@ -8266,6 +9103,7 @@ export class ComboDateDropPopup extends BaseComboDropPopup {
     private _selectedDate;
     initialize(): void;
     getSelectedDate(): Date;
+    getSelectedItem(): JQuery;
     setSelectedDate(date: Date): void;
     /**
      * @param e
@@ -8278,6 +9116,8 @@ export class ComboDateBehavior extends BaseComboBehavior {
     constructor(combo: any, options?: any);
     initialize(): void;
     canType(): boolean;
+    getAriaAutocomplete(): string;
+    getAriaDescription(): string;
     getValue(): Date;
     /**
      * @return
@@ -8352,6 +9192,8 @@ export class ComboMultiValueDropPopup extends ComboListDropPopup {
     private _onItemClick(e?, itemIndex?, $target?, $li?);
 }
 export class ComboMultiValueBehavior extends ComboListBehavior {
+    static Default_Seperate_Char: string;
+    static Default_Join_Char: string;
     constructor(combo: any, options?: any);
     canType(): boolean;
     getValue(): string[];
@@ -8500,6 +9342,17 @@ export interface IDialogOptions extends Panels.IAjaxPanelOptions {
      * @defaultvalue "auto"
      */
     minWidth?: number | string;
+    /**
+     * Max height of the dialog in px or %.
+     * @defaultvalue "auto"
+     */
+    maxHeight?: number | string;
+    /**
+     * Max width of the dialog in px or %.
+     * @defaultvalue "auto"
+     */
+    maxWidth?: number | string;
+    preventAutoResize?: boolean;
 }
 /**
  * @publicapi
@@ -8531,6 +9384,7 @@ export class DialogO<TOptions extends IDialogOptions> extends Panels.AjaxPanelO<
     private _progressElement;
     private _dialogResult;
     private _resizeDelegate;
+    private _secondOverlay;
     /**
      * Creates a new dialog with the provided options
      */
@@ -8617,6 +9471,13 @@ export class DialogO<TOptions extends IDialogOptions> extends Panels.AjaxPanelO<
      * @publicapi
      */
     close(): void;
+    dispose(): void;
+    /**
+     * Remove the second overlay added as an Edge/IE hack (see comment in create() method).
+     * We call this several times because there are several different ways that people use to close dialogs,
+     * and onClose() can even be overridden.
+     */
+    private _removeSecondOverlay();
     private _updateSubtitle();
     /**
      * @param e
@@ -8634,6 +9495,22 @@ export class DialogO<TOptions extends IDialogOptions> extends Panels.AjaxPanelO<
      * @return
      */
     private _onDialogResizing(e?, ui?);
+    /**
+     * The JQuery UI Dialog unfortunately sets an explicit height for the dialog when it is moved,
+     * meaning it will no longer auto-size when the contents are adjusted. However, the dialog
+     * contents container will still have "auto" for its height. Ensure that the dialog contents
+     * container gets set to an explicit height as well so that if its contents adjust, we show
+     * a scrollbar instead of overflowing the dialog container.
+
+     * Furthermore, we want to set the maximum height to be the distance between the current
+     * top of the dialog to the bottom edge of the window. Dialogs will only grow down when
+     * being auto-sized, so the dialog should not grow below the bottom of the window.
+     * @param e
+     * @param ui
+     */
+    private _onDialogMove(e?, ui?);
+    private _ensureDialogContentHeight();
+    private _setMaxHeight();
 }
 export class Dialog extends DialogO<IDialogOptions> {
 }
@@ -8782,6 +9659,14 @@ export interface IShowMessageDialogOptions {
      * Use Bowtie styling. Default is true.
      */
     useBowtieStyle?: boolean;
+    /**
+     * Option to override default focus setting (which sets focus to the next dialog when the current dialog is closed).
+     */
+    noFocusOnClose?: boolean;
+    /**
+    * Optional delegate that can be called when a dialog button is clicked. This can be used to get a value from UI in the dialog before it is removed from the DOM.
+    */
+    beforeClose?: (button: IMessageDialogButton) => void;
 }
 /**
  * Result returned when a MessageDialog is closed.
@@ -8801,6 +9686,10 @@ export interface IMessageDialogOptions extends IDialogOptions {
     buttons?: IMessageDialogButton[] | any;
     escapeButton?: IMessageDialogButton;
     requiredTypedConfirmation?: string;
+    /**
+    * Optional delegate that can be called when a dialog button is clicked. This can be used to get a value from UI in the dialog before it is removed from the DOM.
+    */
+    beforeClose?: (button: IMessageDialogButton) => void;
 }
 /**
  * Class for creating simple dialog boxes. Use MessageDialog.showDialog().
@@ -9209,6 +10098,13 @@ export interface FileInputControlOptions {
     */
     allowedFileExtensions?: string[];
     updateHandler: (updateEvent: FileInputControlUpdateEventData) => void;
+    /**
+    * Callback executed whenever a user bumps into the limit of the file upload control.
+    * @param currentMessage The message provided by the control itself.
+    * @param limitEvent The context data about why the limit was hit.
+    * @returns A message that will be shown to the user in place of currentMessage.
+    */
+    limitMessageFormatter?: (currentMessage: string, limitEvent: FileInputControlLimitEventData) => string;
 }
 /**
 * File result from files uploaded to the FileInputControl.
@@ -9231,6 +10127,23 @@ export enum FileInputControlContentType {
 export interface FileInputControlUpdateEventData {
     loading: boolean;
     files: FileInputControlResult[];
+}
+/**
+* Context for the limit message handler on why the upload limit was reached.
+*/
+export interface FileInputControlLimitEventData {
+    /**
+    * Size of the file that was too large, in bytes.
+    */
+    fileSize?: number;
+    /**
+    * Total size of all files, if the size was too large, in bytes.
+    */
+    totalSize?: number;
+    /**
+    * Number of files the user attempted to upload, if it was capped by maximumNumberOfFiles in the options.
+    */
+    fileCount?: number;
 }
 /**
 * Information about a row in the file input control
@@ -9270,6 +10183,7 @@ export class FileInputControl extends Controls.Control<FileInputControlOptions> 
     private _addFile(file);
     private _getFriendlySizeString(numBytes, decimalPlaces?);
     private _clearError();
+    private _displayLimitError(errorText, limitData);
     private _displayError(errorText);
     getFiles(): FileInputControlResult[];
     isLoadInProgress(): boolean;
@@ -9301,15 +10215,68 @@ export class FileDropTarget extends Controls.Enhancement<FileDropTargetOptions> 
 }
 declare module "VSS/Controls/Filters" {
 import Controls = require("VSS/Controls");
+import Utils_UI = require("VSS/Utils/UI");
+/**
+ * Options for the FlterControl
+ */
 export interface IFilterControlOptions extends Controls.EnhancementOptions {
+    /**
+     * Hide or show corresponding clause section
+     */
     enableGrouping?: boolean;
-    enableRowAddRemove?: boolean;
     hideLogicalOperator?: boolean;
     hideOperatorHeader?: boolean;
+    /**
+    * All controls will be in read only mode
+    */
+    readOnly?: boolean;
+    /**
+     * Enable add or remove clause behavior
+     */
+    enableRowAddRemove?: boolean;
+    /**
+     * Add clause behavior will prepend instead of append. Used with enableRowAddRemove
+     */
+    prependAddRow?: boolean;
+    /**
+     * Add blur propogation to field, operator, and value controls
+     */
     propogateControlBlur?: boolean;
+}
+/**
+ * Model for FilterControl
+ */
+export interface IFilter {
+    clauses?: IFilterClause[];
+    maxGroupLevel?: number;
+    groups?: Utils_UI.IFilterGroup[];
+}
+/**
+ * Model for an individual clause
+ */
+export interface IFilterClause {
+    index?: number;
+    logicalOperator?: string;
+    fieldName?: string;
+    operator?: string;
+    value?: string;
+}
+/**
+ * Info of a clause role including member controls, element, and model information
+ */
+export interface IFilterClauseInfo {
+    clause?: IFilterClause;
+    $row?: JQuery;
+    logicalOperatorControl?: any;
+    fieldNameControl?: any;
+    operatorControl?: any;
+    valueControl?: any;
+    group?: Utils_UI.IFilterGroup;
 }
 export class FilterControlO<TOptions extends IFilterControlOptions> extends Controls.Control<TOptions> {
     static enhancementTypeName: string;
+    protected static ADD_REMOVE_CLASS: string;
+    protected static ADD_CLAUSE_ROW_CLASS: string;
     private _clauseTable;
     private _groupHeaderCell;
     private _filter;
@@ -9376,7 +10343,7 @@ export class FilterControlO<TOptions extends IFilterControlOptions> extends Cont
      */
     initializeOptions(options?: IFilterControlOptions): void;
     setFilter(filter: any): void;
-    private _createClauseTable();
+    protected _createClauseTable(): void;
     private _createHeaderRow();
     _getInsertClauseTooltipText(): string;
     _getRemoveClauseTooltipText(): string;
@@ -9969,6 +10936,8 @@ export class GridO<TOptions extends IGridOptions> extends Controls.Control<TOpti
     private _$popupMenuPinTarget;
     private _showingContextMenu;
     private _automaticContextMenuColumn;
+    private _contextMenuKeyPressedState;
+    private _lastFocusTime;
     /**
      *  Offset height, that shifts the row boundaries up and determines whether the pointer is over a particular row or not
      *  e.g. An offset percentage (passed in by the consumer of the grid) of 50 shifts each row boundary up half the row height for the purposes of calculating whether the mouse
@@ -11004,6 +11973,10 @@ export interface HubsContext {
     selectedHubGroupId: string;
     hubGroups: HubGroup[];
     hubs: Hub[];
+    /**
+     * List of ids of hubgroups that have been pinned.
+     */
+    pinnedHubGroupIds: string[];
 }
 /**
 * Represents a hub group - the first level of navigation
@@ -11190,8 +12163,13 @@ export class ShortcutManager implements IShortcutManager {
 }
 }
 declare module "VSS/Controls/Menus" {
+import Contributions_Services = require("VSS/Contributions/Services");
 import Controls = require("VSS/Controls");
 export var menuManager: any;
+/**
+ * Amount of time in ms after a blur that a menu waits before closing.
+ */
+export var BLUR_CLOSE_TIMEOUT: number;
 export enum MenuItemState {
     None = 0,
     Disabled = 1,
@@ -11214,9 +12192,19 @@ export interface IMenuItemSpec extends IContributedMenuItem {
      */
     html?: string;
     /**
-     * Text displayed when mouse is hovered on the menu item
+     * Text displayed when mouse is hovered on the menu item.
+     * @defaultvalue the value of the text option
      */
     title?: string;
+    /**
+     * Set title to text if not provided.
+     * @defaultvalue true (for now)
+     */
+    setDefaultTitle?: boolean;
+    /**
+     * Set the item's title only when the text overflows and when the mouse is hovering over it
+     */
+    setTitleOnlyOnOverflow?: boolean;
     /**
      * Icon for the menu item
      */
@@ -11227,6 +12215,10 @@ export interface IMenuItemSpec extends IContributedMenuItem {
      */
     separator?: boolean;
     /**
+     * Indicates that this menu item is a separator between menu item groups.
+     */
+    isGroupSeparator?: boolean;
+    /**
      * Determines whether the menu item is initially disabled or not
      * @defaultvalue false
      */
@@ -11235,6 +12227,10 @@ export interface IMenuItemSpec extends IContributedMenuItem {
      * Children of this menu item
      */
     childItems?: any;
+    /**
+     * If childItems is a function and dynamic is true, call the function to update the child items every time they are displayed.
+     */
+    dynamic?: boolean;
     /**
      * Extra css class name for this menu item
      */
@@ -11275,36 +12271,143 @@ export interface IMenuItemSpec extends IContributedMenuItem {
      */
     clickOpensSubMenu?: boolean;
     /**
-    *  Option to renders a split drop menu item (eg a chevron or triangle)
-    */
+     *  Option to renders a split drop menu item (eg a chevron or triangle)
+     */
     splitDropOptions?: ISplitDropMenuItemSpec;
+    /**
+     * Options to enable pinning for the menu item.
+     */
+    pinningOptions?: IMenuItemPinningOptions;
+    /**
+     * Options to control the pinning behavior of this item's submenu.
+     */
+    pinningMenuOptions?: IMenuPinningOptions;
+    /**
+     * If true, item gets 'selected' class.
+     */
+    selected?: boolean;
+    /**
+     * If this is true, and there are child items, don't show the
+     * drop indicator icon.
+     */
+    hideDrop?: boolean;
+    /**
+     * Menu options for any sub menu created by this menu.
+     */
+    childOptions?: MenuOptions;
+    /**
+     * By default, a menu item's id will be used as a command id to execute
+     * an action. Set this to false if this menu item's action should not
+     * default to the item's id.
+     */
+    idIsAction?: boolean;
 }
 export interface ISplitDropMenuItemSpec extends IMenuItemSpec {
 }
+/**
+ * Options for pinnable menu items. This is intended to support the case where there is a menu of
+ * pinned items (the target menu), with a submenu that displays all items (the source menu). Every
+ * pinnable item should be added to both menus (the id of two items that are the same must match).
+ * See also IMenuPinningOptions
+ */
+export interface IMenuItemPinningOptions {
+    /**
+     * Set to true if the item is pinnable.
+     */
+    isPinnable?: boolean;
+    /**
+     * Whether or not the menu item is pinned.
+     */
+    isPinned?: boolean;
+    /**
+     * Set to true to hide the pin button.
+     */
+    hidePin?: boolean;
+    /**
+     * Don't hide this item when it would otherwise be hidden due to hidePinnedItems or hideUnpinnedItems
+     * setting on parent menu.
+     */
+    neverHide?: boolean;
+    /**
+     * Callback to be called when the user pins or unpins the item.
+     * menuItem is the MenuItem that was clicked.
+     * siblingMenuItem is the matching MenuItem from the other Menu.
+     */
+    onPinnedChanged?: (menuItem: MenuItem, pinned: boolean, siblingMenuItem?: MenuItem) => void;
+    /**
+     * Unique identifier for a group of pinnable menu items.
+     */
+    groupId?: string;
+}
+/**
+ * Options for menus with pinnable items. This is intended to support the case where there is a menu of
+ * pinned items (the target menu), with a submenu that displays all items (the source menu). Set
+ * isPinnableTarget and hideUnpinnedItems on the target menu, set isPinnableSource and optionally
+ * hidePinnedItems on the source menu.
+ * See also IMenuItemPinningOptions.
+ */
+export interface IMenuPinningOptions {
+    /**
+     * Set to true to hide unpinned items in this item's submenu.
+     */
+    hideUnpinnedItems?: boolean;
+    /**
+     * Set to true to hide pinned items in this item's submenu.
+     */
+    hidePinnedItems?: boolean;
+    /**
+     * Set to true if this item's submenu is the target pinned items are pinned to. The pinning source should be a submenu of this item's submenu.
+     */
+    isPinningTarget?: boolean;
+    /**
+     * Set to true if this item's submenu is where all pinnable items are shown. The pinning target should be the parent menu of this item.
+     */
+    isPinningSource?: boolean;
+    /**
+     * Set to true on the pinning target if newly-pinned items should be moved to be after every other pinnable item with the same group id.
+     */
+    pinItemsToEnd?: boolean;
+    /**
+     * If true, close this menu when an item is pinned/unpinned.
+     */
+    closeOnPin?: boolean;
+    /**
+     * Unique identifier for a group of pinnable menu items.
+     */
+    groupId?: string;
+    /**
+     * Set on the target menu to hide the source menu when all items are pinned.
+     */
+    hideEmptySourceMenu?: boolean;
+}
 export interface MenuBaseOptions {
-    type: string;
-    contextInfo: any;
-    arguments: any;
-    updateCommandStates: Function;
-    getCommandState: Function;
-    overflow: string;
-    align: string;
-    useBowtieStyle: boolean;
-    cssClass: string;
-    cssCoreClass: string;
+    type?: string;
+    contextInfo?: any;
+    arguments?: any;
+    updateCommandStates?: Function;
+    getCommandState?: Function;
+    overflow?: string;
+    align?: string;
+    useBowtieStyle?: boolean;
+    cssClass?: string;
+    cssCoreClass?: string;
 }
 export class MenuBase<TOptions extends MenuBaseOptions> extends Controls.Control<TOptions> {
     _type: any;
     _parent: any;
-    _children: any;
+    _children: any[];
     _commandStates: any;
     actionArguments: any;
     /**
      * @param options
      */
     constructor(options?: any);
-    getOwner(): any;
+    getOwner(): MenuOwner<MenuOwnerOptions>;
     getParent(): MenuBase<TOptions>;
+    /**
+     * Get the parent menu of this.
+     */
+    getParentMenu(): Menu<MenuOptions>;
     getContextInfo(): any;
     /**
      * @return
@@ -11328,18 +12431,44 @@ export class MenuBase<TOptions extends MenuBaseOptions> extends Controls.Control
     protected _updateContributedMenuItems(items: IMenuItemSpec[]): void;
 }
 export interface MenuItemOptions extends MenuBaseOptions {
-    item: any;
-    immediateShowHide: boolean;
-    clickToggles: boolean;
+    item?: any;
+    immediateShowHide?: boolean;
+    clickToggles?: boolean;
 }
 export class MenuItem extends MenuBase<MenuItemOptions> {
     static enhancementTypeName: string;
-    static getScopedCommandId(id: any, scope: any): any;
+    static getScopedCommandId(id: string, scope: string): string;
+    _parent: Menu<MenuOptions>;
     private _highlightHover;
     private _highlightPressed;
     private _index;
+    private _isPinned;
+    private _pinElement;
+    private _isPinFocused;
+    private _$menuItemElement;
+    private _closeSubmenuOnMouseLeave;
+    /**
+     * Stop propagation of the next mouse leave event.
+     * Useful only when _closeSubmenuOnMouseLeave is
+     * set. Use this when we close a menu from under
+     * the user's mouse cursor (as when we pin/unpin
+     * an item), but we don't want the parent menus to
+     * close.
+     */
+    private _quenchMouseLeave;
+    /**
+     * Don't open sub menus on hover if this is true.
+     * This might happen if a menu item is clicked to
+     * dismiss the submenu - we don't want to re-show
+     * the menu on the next mouse event, (wait until
+     * the mouse has left the element first).
+     */
+    private _blockHoverOpenSubMenu;
+    private _isHidden;
     _item: any;
     _align: any;
+    private static PinnedIconClass;
+    private static UnpinnedIconClass;
     /**
      * @param options
      */
@@ -11348,7 +12477,11 @@ export class MenuItem extends MenuBase<MenuItemOptions> {
      * @param options
      */
     initializeOptions(options?: MenuItemOptions): void;
-    getCommandId(): any;
+    /**
+     * Get the parent menu of this menu item.
+     */
+    getParentMenu(): Menu<MenuOptions>;
+    getCommandId(): string;
     getAction(): any;
     hasAction(): boolean;
     hasSubMenu(): any;
@@ -11360,20 +12493,33 @@ export class MenuItem extends MenuBase<MenuItemOptions> {
      *     NOTE: Currently, Labels are implemented using separators.  However, there are plans to revisit this.
      */
     isLabel(): any;
+    /**
+     * Returns the selected state of this menu item (not to be confused with the
+     * select() method's notion of state)
+     */
     isSelected(): boolean;
     getCommandState(commandId?: string, context?: any): MenuItemState;
     getIndex(): number;
     setIndex(value: number): void;
+    /**
+     * Set to true to hide this menu item.
+     *
+     * Even if this is set to false, the menu item may be hidden for other reasons. See isHidden().
+     * @param value
+     */
+    setIsHidden(value: boolean): void;
     isHidden(): boolean;
     isEnabled(): boolean;
     isToggled(): boolean;
+    isPinnable(): any;
+    isPinned(): boolean;
     initialize(): void;
     update(item: any): void;
     updateItems(items: any): void;
     _decorate(): void;
-    private _getDropIcon();
     private _getExternalIcon(url);
-    select(): void;
+    select(ignoreFocus?: boolean, setKeyboardFocus?: boolean): void;
+    focusPin(value?: boolean): void;
     deselect(): void;
     escaped(): void;
     /**
@@ -11382,7 +12528,7 @@ export class MenuItem extends MenuBase<MenuItemOptions> {
     execute(options?: any): any;
     executeAction(args?: any, e?: JQueryEventObject): any;
     collapse(options?: any): void;
-    setFocus(): void;
+    setFocus(setKeyboardFocus?: boolean): void;
     removeFocus(): void;
     /**
      * Called to show the hover highlight the button
@@ -11431,29 +12577,51 @@ export class MenuItem extends MenuBase<MenuItemOptions> {
      * @param items
      */
     protected _updateContributedMenuItems(updatedItems: IMenuItemSpec[]): void;
-    private _onMouseOver(e?);
-    private _onMouseOut(e?);
+    private _onTouchStart(e?);
+    private _onMouseEnter(e);
+    private _onMouseLeave(e);
     private _onMouseDown(e?);
     private _onMouseUp(e?);
     private _onClick(e?);
     private _onDropClick(e?);
+    private _onPinClick(e);
+    toggleIsPinned(isPinned?: boolean, options?: {
+        unfocus: boolean;
+    }): void;
     private _onKeyDown(e);
 }
 export interface MenuContributionProviderOptions {
     defaultTextToTitle?: boolean;
 }
 export interface MenuOptions extends MenuBaseOptions {
-    suppressInitContributions: boolean;
-    contributionIds: string[];
+    suppressInitContributions?: boolean;
+    contributionIds?: string[];
+    contributionType?: string;
+    contributionQueryOptions?: Contributions_Services.ContributionQueryOptions;
     /**
      * Items to be displayed in the menu
      */
-    items: IMenuItemSpec[];
+    items?: IMenuItemSpec[];
     /**
      * Action executed when a menu item is clicked
      */
-    executeAction: Function;
-    getContributionContext: Function;
+    executeAction?: Function;
+    getContributionContext?: Function;
+    /**
+     * Control the behavior of pinnable items in the menu.
+     */
+    pinningMenuOptions?: IMenuPinningOptions;
+    /**
+     * If true, any time a menu item w/ a sub-menu is hovered,
+     * that sub-menu will be opened. If false, this menu must be
+     * in an "active" state to show the sub menu.
+     */
+    alwaysOpenSubMenuOnHover?: boolean;
+    /**
+     * If true, do not add a separator between grouped items and
+     * ungrouped items.
+     */
+    doNotSeparateUngroupedItems?: boolean;
 }
 /**
  * @publicapi
@@ -11462,24 +12630,28 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
     static enhancementTypeName: string;
     private _items;
     private _itemsSource;
-    private _defaultMenuItem;
     private _childrenCreated;
     private _popupElement;
     private _skipUpdateMenuItemStates;
     private _positioningRoutine;
     private _pinElement;
     private _menuContributionProvider;
+    private _asyncLoadingDelay;
+    private _contributedItemsDelay;
+    private _menuUpdateNeeded;
     /** True if mouse down event has been received on this menu, and mouse up event has not been received. Only tracked for Edge. */
     private _mouseIsDown;
+    private _shouldSelectFirstItem;
     protected _contributedItems: IContributedMenuItem[];
     protected _contributionProviderOptions: MenuContributionProviderOptions;
     protected _contributionPromise: IPromise<IContributedMenuItem[]>;
-    _menuItems: any;
-    _selectedItem: any;
+    _menuItems: MenuItem[];
+    _selectedItem: MenuItem;
     _visible: boolean;
     _active: boolean;
     _blockBlur: boolean;
-    _focusItem: any;
+    _focusItem: MenuItem;
+    openSubMenuOnHover: boolean;
     /**
      * @param options
      */
@@ -11492,7 +12664,7 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
     private _initializeItemsSource();
     _decorate(): void;
     /**
-     * Gets the item which has the specified id.
+     * Gets the item which has the specified command id.
      *
      * @param id  Id associated with the menu item.
      * @return {MenuItem}
@@ -11513,6 +12685,15 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
      * @return
      */
     getItemByTag(tag: string): MenuItem;
+    getMenuItemSpecs(): IMenuItemSpec[];
+    /**
+     * Get the parent menu of this menu, if there is one.
+     */
+    getParentMenu(): Menu<MenuOptions>;
+    /**
+     * Get the pinning options for this menu.
+     */
+    getMenuPinningOptions(): IMenuPinningOptions;
     getCommandState(commandId: string, context?: any): MenuItemState;
     /**
      * Updates the command states of the items with the specified ids.
@@ -11522,6 +12703,7 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
      */
     updateCommandStates(commands: ICommand[]): void;
     updateItems(items: any): void;
+    private _updateItems(items, refreshContributedMenuItems);
     protected _updateItemsWithContributions(items: any, contributedMenuItems: IContributedMenuItem[]): void;
     protected _updateCombinedSource(items: any): void;
     /**
@@ -11533,6 +12715,16 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
      */
     getGroupedItems(): IMenuItemSpec[];
     appendItems(appendedItems: any): void;
+    appendItem(item: IMenuItemSpec): void;
+    /**
+     * Move a menu item to appear immediately after the other given menu item.
+     * @param item
+     * @param after
+     */
+    moveMenuItemAfter(item: MenuItem, after: MenuItem): boolean;
+    removeItem(item: IMenuItemSpec): boolean;
+    removeMenuItem(menuItem: MenuItem): boolean;
+    private _updateAllSourceMenus();
     /**
      * @param element
      */
@@ -11551,8 +12743,8 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
      * @param item
      * @param ignoreFocus
      */
-    _selectItem(item?: any, ignoreFocus?: any): void;
-    selectDefaultItem(ignoreFocus?: any): void;
+    _selectItem(item?: MenuItem, ignoreFocus?: boolean, setKeyboardFocus?: boolean): void;
+    selectDefaultItem(ignoreFocus?: boolean): void;
     selectFirstItem(): boolean;
     selectNextItem(): boolean;
     selectPrevItem(): boolean;
@@ -11576,6 +12768,16 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
      * @return
      */
     selectLeft(options?: any): boolean;
+    /**
+     * Show the menu.
+     *
+     * Options:
+     *  immediate: whether to show the menu immediately or after a short delay (default false)
+     *  showTimeout: optional number of milliseconds to wait before showing when immediate is false
+     *  callback: function to call after menu is shown
+     *  align: how to align the menu with its parent
+     *  setFocus: whether to set the focus to the menu (default true)
+     */
     show(options?: any): boolean;
     /**
      * @param options
@@ -11610,28 +12812,57 @@ export class Menu<TOptions extends MenuOptions> extends MenuBase<TOptions> {
     private _createSplitDropMenuItem(item, menuItem);
     private _ensureChildren();
     private _enhanceChildren();
-    private _getDefaultMenuItem();
     /**
+     * Get the first item at or after the given index that is visible.
+     * @param index
+     * @param options
+     */
+    private _getNextVisibleItem(index, options?);
+    /**
+     * Get the first item at or after the given index that is enabled.
+     * @param index
      * @param options
      */
     private _getNextEnabledItem(index, options?);
     /**
+     * Get the next item at or after the given index that meets the given condition.
+     * @param condition
+     * @param index
+     * @param options
+     */
+    private _getNextItem(condition, index, options?);
+    /**
+     * Get the closest item at or before the given index that is visible.
+     * @param index
+     * @param options
+     */
+    private _getPrevVisibleItem(index, options?);
+    /**
+     * Get the closest item at or before the given index that is enabled.
+     * @param index
      * @param options
      */
     private _getPrevEnabledItem(index, options?);
+    /**
+     * Get the closest item at or before the given index that meets the given condition.
+     * @param condition
+     * @param index
+     * @param options
+     */
+    private _getPrevItem(condition, index, options?);
     private _ensurePopup();
     private _getPopupAlign(align);
-    private _showPopup(element, align);
+    private _showPopup(element, align, setFocus);
     _hidePopup(): void;
     private _updateMenuItemStates();
-    private _startShowTimeout(element, align);
-    private _startHideTimeout();
-    private _clearTimeouts();
+    private _startShowTimeout(element, align, setFocus, showTimeout, callback);
+    private _startHideTimeout(hideTimeout, callback);
     private _attachAncestorScroll(element);
     private _detachAncestorScroll(element);
     protected _dispose(): void;
     _onParentScroll(e: Event): void;
     private _onMouseDown(e);
+    private _onMenuKeyDown(e);
     private _blockBlurUntilTimeout();
     /**
      * Load contributed menu items.
@@ -11660,19 +12891,20 @@ export interface MenuOwnerOptions extends MenuOptions {
      * Determines whether icons are visible or not
      * @defaultvalue true
      */
-    showIcon: boolean;
-    markUnselectable: boolean;
-    showTimeout: number;
-    hideTimeout: number;
-    popupAlign: string;
-    onActivate: Function;
-    onDeactivate: Function;
+    showIcon?: boolean;
+    markUnselectable?: boolean;
+    showTimeout?: number;
+    hideTimeout?: number;
+    popupAlign?: string;
+    onActivate?: Function;
+    onDeactivate?: Function;
 }
 export class MenuOwner<TOptions extends MenuOwnerOptions> extends Menu<TOptions> {
     private _focusElement;
     private _activating;
     private _canBlur;
     private _immediateBlur;
+    private _focusing;
     _subMenuVisible: boolean;
     _align: any;
     /**
@@ -11706,23 +12938,13 @@ export class MenuOwner<TOptions extends MenuOwnerOptions> extends Menu<TOptions>
     escape(options?: any): boolean;
     escaped(options?: any): void;
     isActive(): boolean;
-    activate(): void;
-    /**
-     * This is especially necessary for screen readers to read each
-     * row when the selection changes.
-     */
-    private _updateAriaAttribute(item);
+    activate(tryFocus?: boolean): void;
     private _hide();
     private _blur();
-    private _updateSubMenuVisibleState();
     private _onKeyDown(e?);
     private _onFocus(e?);
-    /**
-     * @param e
-     * @return
-     */
-    private _onBlur(e?);
-    private _proceedBlur();
+    private _onChildFocus(e?);
+    private _onChildBlur(e?);
     private _startBlurTimeout();
     private _clearBlurTimeout();
     _onParentScroll(e?: any): void;
@@ -11743,7 +12965,7 @@ export interface MenuBarOptions extends MenuOwnerOptions {
      * Orientation of the menubar (horizontal or vertical)
      * @defaultvalue "horizontal"
      */
-    orientation: string;
+    orientation?: string;
 }
 export class MenuBarO<TOptions extends MenuBarOptions> extends MenuOwner<TOptions> {
     static enhancementTypeName: string;
@@ -11801,9 +13023,13 @@ export class MenuBar extends MenuBarO<MenuBarOptions> {
     private static _getMenuBar(selector);
 }
 export interface PopupMenuOptions extends MenuOwnerOptions {
-    hidden: boolean;
-    onPopupEscaped: Function;
-    onHide: Function;
+    hidden?: boolean;
+    onPopupEscaped?: Function;
+    onHide?: Function;
+    /**
+     * If the menu should take focus when it appears. Defaults to true.
+     */
+    setFocus?: boolean;
 }
 export class PopupMenuO<TOptions extends PopupMenuOptions> extends MenuOwner<TOptions> {
     static enhancementTypeName: string;
@@ -11836,6 +13062,11 @@ export class PopupMenuO<TOptions extends PopupMenuOptions> extends MenuOwner<TOp
      * @return
      */
     selectDown(options?: any): boolean;
+    /**
+     * Selects the first item of the child menu.
+     * Override of Menu.selectFirstItem()
+     */
+    selectFirstItem(): boolean;
     /**
      * @param options
      * @return
@@ -12218,6 +13449,13 @@ export class TabbedNavigationView extends NavigationView {
      */
     initializeOptions(options?: any): void;
     initialize(): void;
+    /**
+     * Update the given tabs in the tabbed navigation view.
+     * @param tabs Mapping of tabIds to tabControls
+     */
+    updateTabs(tabs: {
+        [key: string]: NavigationViewTab;
+    }): void;
     getTab(tabId: string): NavigationViewTab;
     showError(error: any): void;
     showErrorContent(title: any, $contentHtml: any, messageType: any, expand: any): void;
@@ -12416,6 +13654,7 @@ export interface IMessageAreaControlOptions {
     fillVertical?: boolean;
 }
 export class MessageAreaControlO<TOptions extends IMessageAreaControlOptions> extends Controls.Control<TOptions> {
+    static EVENT_CLOSE_ICON_CLICKED: string;
     static EVENT_DISPLAY_COMPLETE: string;
     static EVENT_DISPLAY_CLEARED: string;
     static ERROR_DETAILS_TOGGLED: string;
@@ -12423,6 +13662,7 @@ export class MessageAreaControlO<TOptions extends IMessageAreaControlOptions> ex
     private _errorContent;
     private _messageType;
     private _showErrorLink;
+    private _iconDiv;
     /**
      * @param options
      */
@@ -12477,6 +13717,8 @@ export class MessageAreaControlO<TOptions extends IMessageAreaControlOptions> ex
      *
      */
     private _setDisplayMessage(message);
+    private _onCloseIconClicked();
+    private _setMessageTypeIcon(messageType);
     private _toggle();
     setErrorDetailsVisibility(show: any): void;
     /**
@@ -12550,6 +13792,13 @@ export interface ICollapsiblePanelOptions extends Controls.EnhancementOptions {
     collapsed?: boolean;
     headerText?: string;
     headerContent?: string | JQuery;
+    /**
+     * A positive number to set the aria-level of the header to. Default is 2. Negative values will
+     * cause the role="heading" attribute to be omitted. Does not work with headerContent or
+     * appendHeader(), in these cases users will have to place role="heading" in their HTML content
+     * as appropriate.
+     */
+    headingLevel?: number;
     expandCss?: string;
     headerCss?: string;
     contentCss?: string;
@@ -12600,7 +13849,7 @@ export class CollapsiblePanel extends Controls.Control<ICollapsiblePanelOptions>
      * Appends the specified HTML, DOM element or jQuery object to the
      * header section of the CollapsiblePanel
      *
-     * @param element Content to append to the header section
+     * @param element Content to append to the header section (JQuery object or HTML string)
      * @return
      */
     appendHeader(element: string | JQuery): CollapsiblePanel;
@@ -12748,6 +13997,18 @@ export interface IRichEditorOptions extends Controls.EnhancementOptions {
     blankPageUrl?: string;
     pageHtml?: string;
     internal: boolean;
+    /**
+     * Value for aria-label to apply to the richeditor
+     */
+    ariaLabel?: string;
+    /**
+     * Function callback when the richeditor gains focus
+     */
+    focusIn?: Function;
+    /**
+     * Function callback when richeditor loses focus
+     */
+    focusOut?: Function;
 }
 /**
  * @exemptedapi
@@ -12769,6 +14030,7 @@ export class RichEditor extends Controls.Control<IRichEditorOptions> {
     static MAXIMIZE_COMMAND: string;
     static IMAGE_AUTOFIT_SCALE_FACTOR: number;
     static WATERMARK_CSS_CLASS: string;
+    static ISEMPTY_MINIMAL_CONTENT_LENGTH: number;
     private _iframe;
     private _window;
     private _textArea;
@@ -12781,7 +14043,6 @@ export class RichEditor extends Controls.Control<IRichEditorOptions> {
     private _explicitFocus;
     private _keyDownInDocument;
     private _customCommandHandlersMap;
-    private _originalValue;
     private _currentValue;
     private _textAreaId;
     private _hasWaterMark;
@@ -12794,6 +14055,7 @@ export class RichEditor extends Controls.Control<IRichEditorOptions> {
      * @param options
      */
     initializeOptions(options?: IRichEditorOptions): void;
+    hasFocus(): boolean;
     _createIn(container: any): void;
     /**
      * @param element
@@ -12803,6 +14065,14 @@ export class RichEditor extends Controls.Control<IRichEditorOptions> {
     isReady(): boolean;
     setEnabled(value: any): void;
     getValue(): string;
+    /**
+     * Checks whether rich editor is visually empty.
+     *
+     * Since the control uses contentEditable on real HTML, the actual DOM has many formatting and content left when it is visually empty.
+     * This function provides a "best effort" check on whether it is visually empty by:
+     * 1. Not empty if content length is over the minimal threshold. See RichEditor.ISEMPTY_MINIMAL_CONTENT_LENGTH.
+     * 2. If content length is less than the minimal threshold, we remove the formatting before checking whether it matches any "empty" case.
+     */
     isEmpty(value: any): boolean;
     setValue(value: any): void;
     /**
@@ -12835,6 +14105,8 @@ export class RichEditor extends Controls.Control<IRichEditorOptions> {
     checkModified(): void;
     private _pasteImage(url);
     private _getToolbar();
+    private _onFocusToolbar(e);
+    private _onFocusOutToolbar(e);
     private _createToolbar();
     /**
      * Creates a toolbar button group.
@@ -12994,6 +14266,18 @@ export interface ISearchBoxControlOptions {
      * searchIconTooltip: Optional: Tooltip for the search icon of ToggleSearchBoxControl.
      */
     searchIconTooltip?: string;
+    /**
+     * Optional: Search icon, defaults to bowtie-search icon.
+     */
+    searchBoxIcon?: string;
+    /**
+     * Optional: Search box icon when it's active, default behaviour is icon unchanged.
+     */
+    searchBoxActiveIcon?: string;
+    /**
+     * Optional: Place holder/water mark text for search box.
+     */
+    placeholderText?: string;
 }
 /**
  * A input box control for search or filter.
@@ -13010,6 +14294,7 @@ export class SearchBoxControl extends Controls.Control<ISearchBoxControlOptions>
     private _value;
     private _inputChangedEventHandlerReset;
     private _subsequentInputChange;
+    private _bowtieSearchIcon;
     constructor(options?: ISearchBoxControlOptions);
     initialize(): void;
     /**
@@ -13031,6 +14316,7 @@ export class SearchBoxControl extends Controls.Control<ISearchBoxControlOptions>
     protected _displaySearchInputBox(isVisible: boolean): void;
     private _clearInput();
     private _createSearchInput();
+    private _getSearchIconClass();
     private _searchIconClickHandler(e?);
     private _bindInputChangedEventHandler();
     private _keyDown(e?);
@@ -13209,9 +14495,15 @@ export class SplitterO<TOptions extends ISplitterOptions> extends Controls.Contr
     private _$toggleButtonIcon;
     private _minWidth;
     private _maxWidth;
+    private _savedFixedSidePixels;
     leftPane: JQuery;
     rightPane: JQuery;
     handleBar: JQuery;
+    /**
+     * Set to null or undefined if the splitter is currently not collapsed.
+     * "right" if collapsed on the left side of the page.
+     * "left" if collapsed on the right side of the page.
+     */
     expandState: string;
     constructor(options: TOptions);
     /**
@@ -13272,10 +14564,12 @@ export class SplitterO<TOptions extends ISplitterOptions> extends Controls.Contr
      */
     isExpanded(): boolean;
     /**
+     * Expands the splitter.
      * @param suppressResize
      */
     removeExpand(suppressResize?: boolean): void;
     /**
+     * Collapses the splitter.
      * @param side
      */
     protected _expandInternal(side?: string): void;
@@ -13287,7 +14581,8 @@ export class SplitterO<TOptions extends ISplitterOptions> extends Controls.Contr
      */
     getFixedSidePixels(): number;
     /**
-     * @param visible
+     * Shows/hides the fixed side of the splitter.
+     * @param visible whether the fixed side should be shown. Defaults to false, does NOT toggle.
      */
     toggleSplit(visible?: boolean, animate?: boolean, defaultExpandToPixels?: number): void;
     /**
@@ -14587,7 +15882,7 @@ export class ComboTreeDropPopup extends Combos.ComboListDropPopup {
     initializeOptions(options?: any): void;
     expandNode(): boolean;
     collapseNode(): boolean;
-    _createItem(index: any): any;
+    _createItem(index: any): JQuery;
     _onItemClick(e?: any, itemIndex?: any, $target?: any, $li?: any): boolean;
     _getSelectedNode(): any;
 }
@@ -14670,6 +15965,11 @@ export class SearchComboTreeBehavior extends Combos.ComboListBehavior {
     constructor(combo: any, options?: any);
     initialize(): void;
     canType(): boolean;
+    getAriaAutocomplete(): string;
+    /**
+     * Get additional text to use to label the control for screen reader users.
+     */
+    getAriaDescription(): string;
     /**
      * @param e
      * @return
@@ -14974,6 +16274,7 @@ export class VirtualizingListView extends Controls.BaseControl {
      */
     selectPrev(page?: boolean): boolean;
     getSelectedIndex(): number;
+    getSelectedItem(): JQuery;
     /**
      * @param noScrollIntoView
      */
@@ -15361,7 +16662,25 @@ export class DelegatedAuthorizationHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class DelegatedAuthorizationHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class DelegatedAuthorizationHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class DelegatedAuthorizationHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class DelegatedAuthorizationHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class DelegatedAuthorizationHttpClient extends DelegatedAuthorizationHttpClient3 {
@@ -15370,9 +16689,9 @@ export class DelegatedAuthorizationHttpClient extends DelegatedAuthorizationHttp
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return DelegatedAuthorizationHttpClient2_2
+ * @return DelegatedAuthorizationHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): DelegatedAuthorizationHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): DelegatedAuthorizationHttpClient2_3;
 }
 declare module "VSS/Diag" {
 export var perfCollector: PerfTracePointCollector;
@@ -15905,6 +17224,7 @@ export class RunningDocumentsTable implements Service.ILocalService {
     beginSave(callback: IResultCallback, errorCallback?: IErrorCallback): void;
     getUnsavedItemsMessage(): string;
     private _isAnyModified();
+    private _registerUnloadEvent();
 }
 export interface Document {
     save(successCallback: IResultCallback, errorCallback?: IErrorCallback): void;
@@ -16032,6 +17352,61 @@ export class CommandEventArgs {
     */
     get_commandSource(): any;
 }
+}
+declare module "VSS/Events/Page" {
+export module CommonPageEvents {
+    var PageInteractive: string;
+    var InitialScriptsLoaded: string;
+}
+export interface IPageEventService {
+    /**
+     * Enables to subscribe a page event.
+     * Specify '*' as eventName to subscribe all events.
+     *
+     * @param eventName Name of the page event to subscribe.
+     * @param callback Callback to invoke when the event is fired.
+     */
+    subscribe(eventName: string, callback: IPageEventCallback): void;
+    /**
+     * Enables to unsubscribe from a page event.
+     * Specify '*' as eventName to unsubscribe from all events.
+     *
+     * @param eventName Name of the page event to unsubscribe.
+     * @param callback Callback to invoke when the event is fired.
+     */
+    unsubscribe(eventName: string, callback: IPageEventCallback): void;
+    /**
+     * Fires a page event.
+     *
+     * @param eventName Name of the page event to fire.
+     * @param eventArgs Optional event arguments.
+     */
+    fire(eventName: string, eventArgs?: any): void;
+    /**
+     * Clears all the subscriptions.
+     */
+    clear(): void;
+}
+export interface IPageEvent {
+    /**
+     * Name of the page event.
+     */
+    name: string;
+    /**
+     * Event arguments specified when the page event is fired.
+     */
+    args: any;
+}
+/**
+ * Defines a page event callback.
+ */
+export interface IPageEventCallback {
+    (event: IPageEvent): void;
+}
+/**
+ * Gets the singleton instance of the page event service.
+ */
+export function getService(): IPageEventService;
 }
 declare module "VSS/Events/Services" {
 import Service = require("VSS/Service");
@@ -16471,6 +17846,10 @@ export interface ExtensionManifest {
      */
     contributionTypes: ContributionType[];
     /**
+     * List of explicit demands required by this extension
+     */
+    demands: string[];
+    /**
      * Collection of endpoints that get called when particular extension events occur
      */
     eventCallbacks: ExtensionEventCallbackCollection;
@@ -16583,6 +17962,10 @@ export enum ExtensionStateFlags {
      * Extension is currently in an error state
      */
     Error = 64,
+    /**
+     * Extension scopes have changed and the extension requires re-authorization
+     */
+    NeedsReauthorization = 128,
 }
 /**
  * Represents a VSTS extension along with its installation state
@@ -16769,6 +18152,7 @@ export var TypeInfo: {
             "versionCheckError": number;
             "trusted": number;
             "error": number;
+            "needsReauthorization": number;
         };
     };
     InstalledExtension: any;
@@ -16852,9 +18236,10 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      * @param {boolean} includeDisabledExtensions
      * @param {boolean} includeErrors
      * @param {string[]} assetTypes
+     * @param {boolean} includeInstallationIssues
      * @return IPromise<Contracts.InstalledExtension[]>
      */
-    getInstalledExtensions(includeDisabledExtensions?: boolean, includeErrors?: boolean, assetTypes?: string[]): IPromise<Contracts.InstalledExtension[]>;
+    getInstalledExtensions(includeDisabledExtensions?: boolean, includeErrors?: boolean, assetTypes?: string[], includeInstallationIssues?: boolean): IPromise<Contracts.InstalledExtension[]>;
 }
 export class CommonMethods2_1To3 extends CommonMethods2To3 {
     protected dataApiVersion: string;
@@ -16902,9 +18287,10 @@ export class CommonMethods2_1To3 extends CommonMethods2To3 {
      *
      * @param {boolean} includeDisabled
      * @param {boolean} includeErrors
+     * @param {boolean} includeInstallationIssues
      * @return IPromise<Contracts.ExtensionState[]>
      */
-    getStates(includeDisabled?: boolean, includeErrors?: boolean): IPromise<Contracts.ExtensionState[]>;
+    getStates(includeDisabled?: boolean, includeErrors?: boolean, includeInstallationIssues?: boolean): IPromise<Contracts.ExtensionState[]>;
     /**
      * [Preview API]
      *
@@ -17007,14 +18393,50 @@ export class ExtensionManagementHttpClient3 extends CommonMethods2_2To3 {
      * [Preview API]
      *
      * @param {string} itemId
+     * @param {boolean} testCommerce
+     * @param {boolean} isFreeOrTrialInstall
      * @return IPromise<Contracts.AcquisitionOptions>
      */
-    getAcquisitionOptions(itemId: string): IPromise<Contracts.AcquisitionOptions>;
+    getAcquisitionOptions(itemId: string, testCommerce?: boolean, isFreeOrTrialInstall?: boolean): IPromise<Contracts.AcquisitionOptions>;
+    /**
+     * [Preview API]
+     *
+     * @param {Contracts.ExtensionAcquisitionRequest} acquisitionRequest
+     * @return IPromise<Contracts.ExtensionAcquisitionRequest>
+     */
+    requestAcquisition(acquisitionRequest: Contracts.ExtensionAcquisitionRequest): IPromise<Contracts.ExtensionAcquisitionRequest>;
+    /**
+     * [Preview API]
+     *
+     * @param {string} publisherName
+     * @param {string} extensionName
+     * @param {string} registrationId
+     * @return IPromise<Contracts.ExtensionAuthorization>
+     */
+    registerAuthorization(publisherName: string, extensionName: string, registrationId: string): IPromise<Contracts.ExtensionAuthorization>;
+}
+/**
+ * @exemptedapi
+ */
+export class ExtensionManagementHttpClient2_3 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 /**
  * @exemptedapi
  */
 export class ExtensionManagementHttpClient2_2 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class ExtensionManagementHttpClient2_1 extends CommonMethods2_1To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class ExtensionManagementHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class ExtensionManagementHttpClient extends ExtensionManagementHttpClient3 {
@@ -17023,9 +18445,9 @@ export class ExtensionManagementHttpClient extends ExtensionManagementHttpClient
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return ExtensionManagementHttpClient2_2
+ * @return ExtensionManagementHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): ExtensionManagementHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): ExtensionManagementHttpClient2_3;
 }
 declare module "VSS/FeatureAvailability/Contracts" {
 /**
@@ -17063,9 +18485,10 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      * @param {string} name - The name of the feature to change
      * @param {string} userEmail
      * @param {boolean} checkFeatureExists - Checks if the feature exists before setting the state
+     * @param {boolean} setAtApplicationLevelAlso
      * @return IPromise<Contracts.FeatureFlag>
      */
-    updateFeatureFlag(state: Contracts.FeatureFlagPatch, name: string, userEmail?: string, checkFeatureExists?: boolean): IPromise<Contracts.FeatureFlag>;
+    updateFeatureFlag(state: Contracts.FeatureFlagPatch, name: string, userEmail?: string, checkFeatureExists?: boolean, setAtApplicationLevelAlso?: boolean): IPromise<Contracts.FeatureFlag>;
     /**
      * [Preview API] Retrieve information on a single feature flag and its current states for a user
      *
@@ -17106,7 +18529,25 @@ export class FeatureAvailabilityHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class FeatureAvailabilityHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class FeatureAvailabilityHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class FeatureAvailabilityHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class FeatureAvailabilityHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class FeatureAvailabilityHttpClient extends FeatureAvailabilityHttpClient3 {
@@ -17115,9 +18556,9 @@ export class FeatureAvailabilityHttpClient extends FeatureAvailabilityHttpClient
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return FeatureAvailabilityHttpClient2_2
+ * @return FeatureAvailabilityHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): FeatureAvailabilityHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): FeatureAvailabilityHttpClient2_3;
 }
 declare module "VSS/FeatureAvailability/Services" {
 import Service = require("VSS/Service");
@@ -17157,6 +18598,180 @@ export class FeatureAvailabilityService extends Service.VssService {
      */
     private _readLocalState(featureName);
 }
+}
+declare module "VSS/FeatureManagement/Contracts" {
+/**
+ * A feature that can be enabled or disabled
+ */
+export interface ContributedFeature {
+    /**
+     * If true, the feature is enabled unless overridden at some scope
+     */
+    defaultState: boolean;
+    /**
+     * Rules for setting the default value if not specified by any setting/scope. Evaluated in order until a rule returns an Enabled or Disabled state (not Undefined)
+     */
+    defaultValueRules: ContributedFeatureDefaultValueRule[];
+    /**
+     * The description of the feature
+     */
+    description: string;
+    /**
+     * The full contribution id of the feature
+     */
+    id: string;
+    /**
+     * The friendly name of the feature
+     */
+    name: string;
+    /**
+     * The scopes/levels at which settings can set the enabled/disabled state of this feature
+     */
+    scopes: ContributedFeatureSettingScope[];
+}
+/**
+ * A rules for setting the default value of a feature if not specified by any setting/scope
+ */
+export interface ContributedFeatureDefaultValueRule {
+    /**
+     * Name of the IContributedFeatureValuePlugin to run
+     */
+    name: string;
+    /**
+     * Properties to feed to the IContributedFeatureValuePlugin
+     */
+    properties: {
+        [key: string]: any;
+    };
+}
+export enum ContributedFeatureEnabledValue {
+    /**
+     * The state of the feature is not set for the specified scope
+     */
+    Undefined = -1,
+    /**
+     * The feature is disabled at the specified scope
+     */
+    Disabled = 0,
+    /**
+     * The feature is enabled at the specified scope
+     */
+    Enabled = 1,
+}
+/**
+ * The scope to which a feature setting applies
+ */
+export interface ContributedFeatureSettingScope {
+    /**
+     * The name of the settings scope to use when reading/writing the setting
+     */
+    settingScope: string;
+    /**
+     * Whether this is a user-scope or this is a host-wide (all users) setting
+     */
+    userScoped: boolean;
+}
+/**
+ * A contributed feature/state pair
+ */
+export interface ContributedFeatureState {
+    /**
+     * The full contribution id of the feature
+     */
+    featureId: string;
+    /**
+     * The scope at which this state applies
+     */
+    scope: ContributedFeatureSettingScope;
+    /**
+     * The current state of this feature
+     */
+    state: ContributedFeatureEnabledValue;
+}
+export var TypeInfo: {
+    ContributedFeatureEnabledValue: {
+        enumValues: {
+            "undefined": number;
+            "disabled": number;
+            "enabled": number;
+        };
+    };
+    ContributedFeatureState: any;
+};
+}
+declare module "VSS/FeatureManagement/RestClient" {
+import Contracts = require("VSS/FeatureManagement/Contracts");
+import VSS_WebApi = require("VSS/WebApi/RestClient");
+/**
+ * @exemptedapi
+ */
+export class FeatureManagementHttpClient3 extends VSS_WebApi.VssHttpClient {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * [Preview API] Get a specific feature by its id
+     *
+     * @param {string} featureId - The contribution id of the feature
+     * @return IPromise<Contracts.ContributedFeature>
+     */
+    getFeature(featureId: string): IPromise<Contracts.ContributedFeature>;
+    /**
+     * [Preview API]
+     *
+     * @return IPromise<Contracts.ContributedFeature[]>
+     */
+    getFeatures(): IPromise<Contracts.ContributedFeature[]>;
+    /**
+     * [Preview API] Get the state of the specified feature for the given user/all-users scope
+     *
+     * @param {string} featureId - Contribution id of the feature
+     * @param {string} userScope - User-Scope at which to get the value. Should be "me" for the current user or "host" for all users.
+     * @return IPromise<Contracts.ContributedFeatureState>
+     */
+    getFeatureState(featureId: string, userScope: string): IPromise<Contracts.ContributedFeatureState>;
+    /**
+     * [Preview API] Set the state of a feature
+     *
+     * @param {Contracts.ContributedFeatureState} feature - Posted feature state object. Should specify the effective value.
+     * @param {string} featureId - Contribution id of the feature
+     * @param {string} userScope - User-Scope at which to set the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} reason - Reason for changing the state
+     * @param {string} reasonCode - Short reason code
+     * @return IPromise<Contracts.ContributedFeatureState>
+     */
+    setFeatureState(feature: Contracts.ContributedFeatureState, featureId: string, userScope: string, reason?: string, reasonCode?: string): IPromise<Contracts.ContributedFeatureState>;
+    /**
+     * [Preview API] Get the state of the specified feature for the given named scope
+     *
+     * @param {string} featureId - Contribution id of the feature
+     * @param {string} userScope - User-Scope at which to get the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} scopeName - Scope at which to get the feature setting for (e.g. "project" or "team")
+     * @param {string} scopeValue - Value of the scope (e.g. the project or team id)
+     * @return IPromise<Contracts.ContributedFeatureState>
+     */
+    getFeatureStateForScope(featureId: string, userScope: string, scopeName: string, scopeValue: string): IPromise<Contracts.ContributedFeatureState>;
+    /**
+     * [Preview API] Set the state of a feature at a specific scope
+     *
+     * @param {Contracts.ContributedFeatureState} feature - Posted feature state object. Should specify the effective value.
+     * @param {string} featureId - Contribution id of the feature
+     * @param {string} userScope - User-Scope at which to set the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} scopeName - Scope at which to get the feature setting for (e.g. "project" or "team")
+     * @param {string} scopeValue - Value of the scope (e.g. the project or team id)
+     * @param {string} reason - Reason for changing the state
+     * @param {string} reasonCode - Short reason code
+     * @return IPromise<Contracts.ContributedFeatureState>
+     */
+    setFeatureStateForScope(feature: Contracts.ContributedFeatureState, featureId: string, userScope: string, scopeName: string, scopeValue: string, reason?: string, reasonCode?: string): IPromise<Contracts.ContributedFeatureState>;
+}
+export class FeatureManagementHttpClient extends FeatureManagementHttpClient3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * Gets an http client targeting the latest released version of the APIs.
+ *
+ * @return FeatureManagementHttpClient3
+ */
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): FeatureManagementHttpClient3;
 }
 declare module "VSS/FileContainer/Contracts" {
 export enum ContainerItemStatus {
@@ -17415,7 +19030,25 @@ export class FileContainerHttpClient3 extends CommonMethods2_1To3 {
 /**
  * @exemptedapi
  */
+export class FileContainerHttpClient2_3 extends CommonMethods2_1To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class FileContainerHttpClient2_2 extends CommonMethods2_1To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class FileContainerHttpClient2_1 extends CommonMethods2_1To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class FileContainerHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class FileContainerHttpClient extends FileContainerHttpClient3 {
@@ -17424,9 +19057,9 @@ export class FileContainerHttpClient extends FileContainerHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return FileContainerHttpClient2_2
+ * @return FileContainerHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): FileContainerHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): FileContainerHttpClient2_3;
 }
 declare module "VSS/FileContainer/Services" {
 import FileContainer_Contracts = require("VSS/FileContainer/Contracts");
@@ -17543,6 +19176,26 @@ export interface AcquisitionOptions {
      */
     target: string;
 }
+export interface Answers {
+    /**
+     * Gets or sets the vs marketplace extension name
+     */
+    vSMarketplaceExtensionName: string;
+    /**
+     * Gets or sets the vs marketplace publsiher name
+     */
+    vSMarketplacePublisherName: string;
+}
+export interface AssetDetails {
+    /**
+     * Gets or sets the Answers, which contains vs marketplace extension name and publisher name
+     */
+    answers: Answers;
+    /**
+     * Gets or sets the VS publisher Id
+     */
+    publisherNaturalIdentifier: string;
+}
 export interface AzurePublisher {
     azurePublisherId: string;
     publisherName: string;
@@ -17551,7 +19204,7 @@ export interface AzureRestApiRequestModel {
     /**
      * Gets or sets the Asset details
      */
-    assetDetails: any;
+    assetDetails: AssetDetails;
     /**
      * Gets or sets the asset id
      */
@@ -17565,33 +19218,17 @@ export interface AzureRestApiRequestModel {
      */
     customerSupportEmail: string;
     /**
-     * Gets or sets the customer support phone number
-     */
-    customerSupportPhoneNumber: string;
-    /**
-     * Gets or sets the resource id
-     */
-    id: string;
-    /**
      * Gets or sets the integration contact email
      */
     integrationContactEmail: string;
     /**
-     * Gets or sets the integration contact phone number
-     */
-    integrationContactPhoneNumber: string;
-    /**
      * Gets or sets the asset version
      */
-    operation: AzureRestApiRequestOperationType;
+    operation: string;
     /**
      * Gets or sets the plan identifier if any.
      */
     planId: string;
-    /**
-     * Gets or sets the previous operation details if any
-     */
-    previousOperationDetails: any;
     /**
      * Gets or sets the publisher id
      */
@@ -17601,37 +19238,34 @@ export interface AzureRestApiRequestModel {
      */
     type: string;
 }
-export enum AzureRestApiRequestOperationType {
-    /**
-     * The operation is for preview (or stage for testing).
-     */
-    Preview = 0,
-    /**
-     * The operation is for production.
-     */
-    Production = 1,
-    /**
-     * The operation is for hide.
-     */
-    Hide = 2,
-    /**
-     * The operation is for unhide.
-     */
-    Show = 3,
-    /**
-     * The operation is for delete previewed or staged assets.
-     */
-    DeletePreview = 4,
-    /**
-     * The operation is for delete listed or live assets.
-     */
-    DeleteProduction = 5,
-}
 export interface AzureRestApiResponseModel extends AzureRestApiRequestModel {
     /**
      * Gets or sets the Asset operation status
      */
     operationStatus: RestApiResponseStatusModel;
+}
+/**
+ * This is the set of categories in response to the get category query
+ */
+export interface CategoriesResult {
+    categories: ExtensionCategory[];
+}
+/**
+ * Definition of one title of a category
+ */
+export interface CategoryLanguageTitle {
+    /**
+     * The language for which the title is applicable
+     */
+    lang: string;
+    /**
+     * The language culture id of the lang parameter
+     */
+    lcid: number;
+    /**
+     * Actual title to be shown on the UI
+     */
+    title: string;
 }
 export enum ConcernCategory {
     General = 1,
@@ -17671,10 +19305,33 @@ export interface ExtensionAcquisitionRequest {
      */
     targets: string[];
 }
+export interface ExtensionBadge {
+    description: string;
+    imgUri: string;
+    link: string;
+}
 export interface ExtensionCategory {
+    /**
+     * The name of the products with which this category is associated to.
+     */
+    associatedProducts: string[];
     categoryId: number;
+    /**
+     * This is the internal name for a category
+     */
     categoryName: string;
+    /**
+     * This parameter is obsolete. Refer to LanguageTitles for langauge specific titles
+     */
     language: string;
+    /**
+     * The list of all the titles of this category in various languages
+     */
+    languageTitles: CategoryLanguageTitle[];
+    /**
+     * This is the internal name of the parent if this is associated with a parent
+     */
+    parentCategoryName: string;
 }
 export interface ExtensionFile {
     assetType: string;
@@ -17895,6 +19552,14 @@ export enum ExtensionQueryFlags {
      */
     IncludeLatestVersionOnly = 512,
     /**
+     * This flag switches the asset uri to use GetAssetByName instead of CDN When this is used, values of base asset uri and base asset uri fallback are switched When this is used, source of asset files are pointed to Gallery service always even if CDN is available
+     */
+    UseFallbackAssetUri = 1024,
+    /**
+     * This flag is used to get all the metadata values associated with the extension. This is not applicable to VSTS or VSCode extensions and usage is only internal.
+     */
+    IncludeMetadata = 2048,
+    /**
      * AllAttributes is designed to be a mask that defines all sub-elements of the extension should be returned.  NOTE: This is not actually All flags. This is now locked to the set defined since changing this enum would be a breaking change and would change the behavior of anyone using it. Try not to use this value when making calls to the service, instead be explicit about the options required.
      */
     AllAttributes = 479,
@@ -17917,8 +19582,23 @@ export interface ExtensionStatistic {
     statisticName: string;
     value: number;
 }
+export enum ExtensionStatisticOperation {
+    None = 0,
+    Set = 1,
+    Increment = 2,
+    Decrement = 3,
+    Delete = 4,
+}
+export interface ExtensionStatisticUpdate {
+    extensionName: string;
+    operation: ExtensionStatisticOperation;
+    publisherName: string;
+    statistic: ExtensionStatistic;
+}
 export interface ExtensionVersion {
     assetUri: string;
+    badges: ExtensionBadge[];
+    fallbackAssetUri: string;
     files: ExtensionFile[];
     flags: ExtensionVersionFlags;
     lastUpdated: Date;
@@ -17985,8 +19665,15 @@ export interface PublishedExtension {
     installationTargets: InstallationTarget[];
     lastUpdated: Date;
     longDescription: string;
+    /**
+     * Date on which the extension was first uploaded.
+     */
     publishedDate: Date;
     publisher: PublisherFacts;
+    /**
+     * Date on which the extension first went public.
+     */
+    releaseDate: Date;
     sharedWith: ExtensionShare[];
     shortDescription: string;
     statistics: ExtensionStatistic[];
@@ -18034,6 +19721,10 @@ export enum PublishedExtensionFlags {
      * The Preview flag indicates that the extension is still under preview (not yet of "release" quality). These extensions may be decorated differently in the gallery and may have different policies applied to them.
      */
     Preview = 2048,
+    /**
+     * The Unpublished flag indicates that the extension can't be installed/downloaded. Users who have installed such an extension can continue to use the extension.
+     */
+    Unpublished = 4096,
 }
 export interface Publisher {
     displayName: string;
@@ -18327,6 +20018,10 @@ export enum ReviewPatchOperation {
      * Update an existing review
      */
     UpdateReview = 2,
+    /**
+     * Submit a reply for a review
+     */
+    ReplyToReview = 3,
 }
 export interface ReviewReply {
     /**
@@ -18417,6 +20112,10 @@ export enum SortByType {
      * The results will be sorted as per Trending monthly Score of the extensions
      */
     TrendingMonthly = 9,
+    /**
+     * The results will be sorted as per ReleaseDate of the extensions (date on which the extension first went public)
+     */
+    ReleaseDate = 10,
 }
 export enum SortOrderType {
     /**
@@ -18550,10 +20249,22 @@ export var TypeInfo: {
             "includeAssetUri": number;
             "includeStatistics": number;
             "includeLatestVersionOnly": number;
+            "useFallbackAssetUri": number;
+            "includeMetadata": number;
             "allAttributes": number;
         };
     };
     ExtensionQueryResult: any;
+    ExtensionStatisticOperation: {
+        enumValues: {
+            "none": number;
+            "set": number;
+            "increment": number;
+            "decrement": number;
+            "delete": number;
+        };
+    };
+    ExtensionStatisticUpdate: any;
     ExtensionVersion: any;
     ExtensionVersionFlags: {
         enumValues: {
@@ -18580,6 +20291,7 @@ export var TypeInfo: {
             "multiVersion": number;
             "system": number;
             "preview": number;
+            "unpublished": number;
         };
     };
     Publisher: any;
@@ -18642,6 +20354,7 @@ export var TypeInfo: {
         enumValues: {
             "flagReview": number;
             "updateReview": number;
+            "replyToReview": number;
         };
     };
     ReviewReply: any;
@@ -18658,6 +20371,7 @@ export var TypeInfo: {
             "trendingDaily": number;
             "trendingWeekly": number;
             "trendingMonthly": number;
+            "releaseDate": number;
         };
     };
     SortOrderType: {
@@ -18681,6 +20395,7 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
     protected assetbynameApiVersion: string;
     protected assetsApiVersion: string;
     protected categoriesApiVersion: string;
+    protected categoriesApiVersion_e0a5a71e: string;
     protected certificatesApiVersion: string;
     protected extensionqueryApiVersion: string;
     protected extensionsApiVersion: string;
@@ -18770,6 +20485,15 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
     /**
      * [Preview API]
      *
+     * @param {string} publisherName
+     * @param {string} extensionName
+     * @param {Contracts.PublishedExtensionFlags} flags
+     * @return IPromise<Contracts.PublishedExtension>
+     */
+    updateExtensionProperties(publisherName: string, extensionName: string, flags: Contracts.PublishedExtensionFlags): IPromise<Contracts.PublishedExtension>;
+    /**
+     * [Preview API]
+     *
      * @param {Contracts.ExtensionPackage} extensionPackage
      * @param {string} publisherName
      * @param {string} extensionName
@@ -18856,6 +20580,15 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
     /**
      * [Preview API]
      *
+     * @param {string} categoryName
+     * @param {string} languages
+     * @param {string} product
+     * @return IPromise<Contracts.CategoriesResult>
+     */
+    getCategoryDetails(categoryName: string, languages?: string, product?: string): IPromise<Contracts.CategoriesResult>;
+    /**
+     * [Preview API]
+     *
      * @param {string} languages
      * @return IPromise<string[]>
      */
@@ -18938,9 +20671,10 @@ export class CommonMethods2_2To3 extends CommonMethods2_1To3 {
      * @param {string} itemId
      * @param {string} installationTarget
      * @param {boolean} testCommerce
+     * @param {boolean} isFreeOrTrialInstall
      * @return IPromise<Contracts.AcquisitionOptions>
      */
-    getAcquisitionOptions(itemId: string, installationTarget: string, testCommerce?: boolean): IPromise<Contracts.AcquisitionOptions>;
+    getAcquisitionOptions(itemId: string, installationTarget: string, testCommerce?: boolean, isFreeOrTrialInstall?: boolean): IPromise<Contracts.AcquisitionOptions>;
 }
 /**
  * @exemptedapi
@@ -19002,15 +20736,24 @@ export class GalleryHttpClient3 extends CommonMethods2_2To3 {
      */
     createReview(review: Contracts.Review, pubName: string, extName: string): IPromise<Contracts.Review>;
     /**
+     * [Preview API] Deletes a review
+     *
+     * @param {string} pubName - Name of the pubilsher who published the extension
+     * @param {string} extName - Name of the extension
+     * @param {number} reviewId - Id of the review which needs to be updated
+     * @return IPromise<void>
+     */
+    deleteReview(pubName: string, extName: string, reviewId: number): IPromise<void>;
+    /**
      * [Preview API] Updates or Flags a review
      *
      * @param {Contracts.ReviewPatch} reviewPatch - ReviewPatch object which contains the changes to be applied to the review
      * @param {string} pubName - Name of the pubilsher who published the extension
      * @param {string} extName - Name of the extension
-     * @param {number} resourceId - Id of the review which needs to be updated
+     * @param {number} reviewId - Id of the review which needs to be updated
      * @return IPromise<Contracts.ReviewPatch>
      */
-    updateReview(reviewPatch: Contracts.ReviewPatch, pubName: string, extName: string, resourceId: number): IPromise<Contracts.ReviewPatch>;
+    updateReview(reviewPatch: Contracts.ReviewPatch, pubName: string, extName: string, reviewId: number): IPromise<Contracts.ReviewPatch>;
     /**
      * [Preview API]
      *
@@ -19018,11 +20761,38 @@ export class GalleryHttpClient3 extends CommonMethods2_2To3 {
      * @return IPromise<Contracts.ExtensionCategory>
      */
     createCategory(category: Contracts.ExtensionCategory): IPromise<Contracts.ExtensionCategory>;
+    /**
+     * [Preview API]
+     *
+     * @param {Contracts.ExtensionStatisticUpdate} extensionStatisticsUpdate
+     * @param {string} publisherName
+     * @param {string} extensionName
+     * @return IPromise<void>
+     */
+    updateExtensionStatistics(extensionStatisticsUpdate: Contracts.ExtensionStatisticUpdate, publisherName: string, extensionName: string): IPromise<void>;
+}
+/**
+ * @exemptedapi
+ */
+export class GalleryHttpClient2_3 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 /**
  * @exemptedapi
  */
 export class GalleryHttpClient2_2 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class GalleryHttpClient2_1 extends CommonMethods2_1To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class GalleryHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class GalleryHttpClient extends GalleryHttpClient3 {
@@ -19031,9 +20801,9 @@ export class GalleryHttpClient extends GalleryHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return GalleryHttpClient2_2
+ * @return GalleryHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): GalleryHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): GalleryHttpClient2_3;
 }
 declare module "VSS/Identities/Contracts" {
 /**
@@ -19371,7 +21141,25 @@ export class IdentityMruHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class IdentityMruHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class IdentityMruHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class IdentityMruHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class IdentityMruHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class IdentityMruHttpClient extends IdentityMruHttpClient3 {
@@ -19380,9 +21168,9 @@ export class IdentityMruHttpClient extends IdentityMruHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return IdentityMruHttpClient2_2
+ * @return IdentityMruHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): IdentityMruHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): IdentityMruHttpClient2_3;
 }
 declare module "VSS/Identities/Picker/Cache" {
 /**
@@ -19649,9 +21437,9 @@ export interface IIdentityPickerDropdownOptions extends Identities_Picker_Servic
     **/
     onHide?: (event?: JQueryEventObject) => void;
     /**
-    *   Callback to execute when the id card blurs in the dropdown control
+    *   An element that will receive focus when the contact card for an item in the dropdown is closed
     **/
-    onIdCardBlurCallback?: () => void;
+    focusElementOnContactCardClose?: JQuery;
 }
 /**
  * @exemptedapi
@@ -19679,6 +21467,7 @@ export class IdentityPickerDropdownControl extends Controls.Control<IIdentityPic
     **/
     static SHOW_DROPDOWN_EVENT_INTERNAL: string;
     static HIDE_DROPDOWN_EVENT_INTERNAL: string;
+    static UPDATE_ACTIVE_DESCENDANT_ID: string;
     static CSS_DROPDOWN_BASE: string;
     static IMAGE_MARGINS_PX: number;
     private static MIN_WIDTH;
@@ -19713,6 +21502,7 @@ export class IdentityPickerDropdownControl extends Controls.Control<IIdentityPic
     private _showContactCard;
     private _isDropdownVisibleInitially;
     private _entityOperationsFacade;
+    private _isFiltered;
     constructor(options?: IIdentityPickerDropdownOptions);
     /**
     *   For internal / unit testing use only
@@ -19729,6 +21519,10 @@ export class IdentityPickerDropdownControl extends Controls.Control<IIdentityPic
     * Returns true if the dropdown is currently being shown
     **/
     isVisible(): boolean;
+    /**
+    * Returns true if the prefix was used for filtering the identities in the dropdown
+    **/
+    isFiltered(): boolean;
     showAllMruIdentities(selectFirstByDefault?: boolean): IPromise<Identities_Picker_RestClient.IEntity[]>;
     /**
     * Get Identities
@@ -19767,13 +21561,14 @@ export class IdentityPickerDropdownControl extends Controls.Control<IIdentityPic
     private _showPostLoad();
     private _constructDropdown(entitiesToSet, keepIndex?, setupDom?, selectFirstByDefault?);
     /**
-    * Removes the identity to the querying identity's MRU
+    * Removes the identity from the querying identity's MRU
     **/
     private _removeIdentityFromMru(localId);
     /**
     *   keepIndex: Keep the index of the selected identity at the current location
     **/
     private _alterStateAndRender(showDropDown?, keepIndex?, selectFirstByDefault?);
+    private _getUniqueIdForActiveDescendant();
     /**
     * Scroll to selected item
     **/
@@ -19796,13 +21591,13 @@ export class IdentityPickerDropdownControl extends Controls.Control<IIdentityPic
     private _prevPage();
     private _nextItem();
     private _prevItem();
-    private _highlightPrefix(textValue);
     /**
     * Create the li that shall represent an user item
     **/
     private _createItem(index);
     private _logSelectedEntity(selectedItem);
     private _setupDom();
+    private _showAdditionalInformation();
     private _setupEntitiesInDom();
     private _constructSearchResultStatus();
     private _constructSearchButton();
@@ -19810,7 +21605,6 @@ export class IdentityPickerDropdownControl extends Controls.Control<IIdentityPic
     private _loadNextPage(force?);
     private _searchButtonClickDelegate();
     private _setShowContactCard();
-    private _forceDisableShowContactCardOnPremises();
 }
 export interface IIdentityPickerIdCardDialogOptions extends Identities_Picker_Services.IIdentityServiceOptions, Identities_Picker_Services.IIdentityPickerExtensionOptions {
     /**
@@ -19834,13 +21628,13 @@ export interface IIdentityPickerIdCardDialogOptions extends Identities_Picker_Se
     **/
     anchor?: JQuery;
     /**
-    *  An optional container of the anchor to be considered. Passing an iframe allows for positioning over an anchor in an other frame.
+    *   An optional container of the anchor to be considered. Passing an iframe allows for positioning over an anchor in an other frame.
     **/
     anchorContainer?: JQuery;
     /**
-    *   Callback method to execute on blur.
+    *   An element that will receive focus when the contact card is closed. If unset, the focus will go to the previously active element
     **/
-    onblurCallback?: () => void;
+    focusElementOnClose?: JQuery;
 }
 export class IdCardDialog extends Controls.Control<IIdentityPickerIdCardDialogOptions> {
     static IDCARD_LOADED_EVENT: string;
@@ -19861,6 +21655,9 @@ export class IdCardDialog extends Controls.Control<IIdentityPickerIdCardDialogOp
     private _pageSize;
     private _$loading;
     private _entityOperationsFacade;
+    private _previousFocusedElement;
+    private _selectedIndex;
+    private _onIdCardBlurDelegate;
     constructor(options?: IIdentityPickerIdCardDialogOptions);
     initializeOptions(options?: IIdentityPickerIdCardDialogOptions): void;
     initialize(): void;
@@ -19873,10 +21670,19 @@ export class IdCardDialog extends Controls.Control<IIdentityPickerIdCardDialogOp
     private _displayIdCard(identity);
     private _constructMemberTabContent();
     private _getDirectoryMemberEntities(identity);
+    private _isMembersListVisible();
     private _onIdCardBlur(e?);
+    private _onIdCardClose(e, ui);
+    private _onKeyDown(e);
     private _createItem(item);
     private _renderMembersList();
     private _loadNextPage();
+    private _nextItem();
+    private _prevItem();
+    private _nextPage();
+    private _prevPage();
+    private _setMemberActiveDescendant(id);
+    private _setSelectedIndex(newSelectedIndex, position?);
 }
 export interface ISearchControlCallbackOptions {
     /**
@@ -19899,7 +21705,8 @@ export interface ISearchControlCallbackOptions {
 export interface IIdentityPickerSearchOptions extends Identities_Picker_Services.IIdentityServiceOptions, Identities_Picker_Services.IIdentityPickerExtensionOptions {
     /**
     *   default identities to initialise the dropdown with - if you are constructing the IEntity objects, their identifiers (such as entityId, localId etc.) have to be valid;
-    *   alternatively the input can be a semi-colon separated sequence of unique identifiers (such as sign-in addresses or aliases)
+    *   alternatively the input can be a semi-colon separated sequence of unique identifiers (such as sign-in addresses or aliases).
+    *   We also support the format "DisplayName <UniqueIdentifier>" (see the option showTemporaryDisplayName for details)
     **/
     items?: string | Identities_Picker_RestClient.IEntity[];
     /**
@@ -19915,15 +21722,15 @@ export interface IIdentityPickerSearchOptions extends Identities_Picker_Services
     **/
     multiIdentitySearch?: boolean;
     /**
-    *   whether to display the contact card icon for each identity in the dropdown. Default false.
+    *   whether to display the contact card icon for each identity in the dropdown and for resolved identities. Default false.
     **/
     showContactCard?: boolean;
     /**
-    *   whether to style the search control with a triangle that displays the MRU on click or not. Default false.
+    *   whether to style the search control with a triangle that displays the MRU on click or not. Default false. Setting this will also enable the MRU on the dropdown.
     **/
     showMruTriangle?: boolean;
     /**
-    *   whether the dropdown should display the MRU with the search button or just search directories directly. Setting this will also enable the MRU on the dropdown.
+    *   whether the dropdown should display the MRU with the search button or just search directories directly.
     *   Default false.
     **/
     showMru?: boolean;
@@ -19963,6 +21770,11 @@ export interface IIdentityPickerSearchOptions extends Identities_Picker_Services
     *   Callbacks supported by the search control
     **/
     callbacks?: ISearchControlCallbackOptions;
+    /**
+    *   in case the control gets initialized with items in the format "DisplayName <UniqueIdentifier>",
+    *   whether to show the DisplayName until the UniqueIdentifier gets resolved to an IEntity. Default false
+    **/
+    showTemporaryDisplayName?: boolean;
 }
 /**
  * @exemptedapi
@@ -19987,6 +21799,7 @@ export interface IIdentityPickerControlInteractable {
 export class IdentityPickerSearchControl extends Controls.Control<IIdentityPickerSearchOptions> implements IdentityPickerSearchControl {
     static INVALID_INPUT_EVENT: string;
     static VALID_INPUT_EVENT: string;
+    static RESOLVED_INPUT_REMOVED_EVENT: string;
     static DATA_SOURCE_FALLBACK_EVENT: string;
     static DATA_SOURCE_REEVALUATE_EVENT: string;
     static SEARCH_STARTED_EVENT: string;
@@ -20006,10 +21819,7 @@ export class IdentityPickerSearchControl extends Controls.Control<IIdentityPicke
     private _$input;
     private _$container;
     private _$mruTriangle;
-    private _searchTerm;
     private _$currentlyFocusedItem;
-    private _typingTimer;
-    private _doneTypingInterval;
     private _controlWidth;
     private _resolvedIEntity;
     private _preDropdownRender;
@@ -20017,9 +21827,9 @@ export class IdentityPickerSearchControl extends Controls.Control<IIdentityPicke
     private _controlLoaded;
     private _loadOnCreate;
     private _size;
-    private _updateThumbnailDelegate;
     private _dropdownShowEventDelegate;
     private _dropdownHideEventDelegate;
+    private _updateActiveDescendantIdEventDelegate;
     private _previousInput;
     private _externalEventDelegate;
     private _showContactCard;
@@ -20039,6 +21849,7 @@ export class IdentityPickerSearchControl extends Controls.Control<IIdentityPicke
     getIdentitySearchResult(): IdentitySearchResult;
     clear(): void;
     isDropdownVisible(): boolean;
+    isDropdownFiltered(): boolean;
     addIdentitiesToMru(identities: Identities_Picker_RestClient.IEntity[]): void;
     /**
     * Appends to the search control's entities - this expects valid IEntity objects or valid query tokens - such as unique email addresses - entity objects must have been retrieved at some point from the control or DDS, or created using EntityFactory
@@ -20068,8 +21879,10 @@ export class IdentityPickerSearchControl extends Controls.Control<IIdentityPicke
     private _stopProgressCursor();
     private _fireInvalidInput();
     private _fireValidInput();
+    private _fireRemoveResolvedInput();
     private _fireDataSourceFallback();
     private _fireDataSourceReevaluate();
+    private _updateActiveDescendantId(data);
     private _isShowMruEnabledInDropdown();
     private _attachHandlersOnShowDropdown(data);
     private _detachHandlersOnHideDropdown(data);
@@ -20094,21 +21907,21 @@ export class IdentityPickerSearchControl extends Controls.Control<IIdentityPicke
     private _removeFromResolved(item);
     private _getInputText();
     private _resolveInputToIdentities(input, queryTypeHint?, operationScope?);
-    private _getIdentities(searchTerm);
     private _recalculateInputWidth();
     private _replaceAndCleanup(token);
     private _findInSelectedItems(object);
     private _showIdCardDialog(args);
     private _clearWatermark();
     private _showWatermark();
+    private _createTemporaryItem(displayName, identifier);
     private _isControlInFocus();
     private _createResolvedItem(title, dataAttribute);
+    private _setResolvedItemRole(element, displayValue?);
     private _resolveItem(item, clearInput?, prefix?, resolveByTab?);
     private _getItemNameContainerMaxWidth(otherElementsInItemSpan);
     private _getSearchPrefix(input);
     private _unresolveItem(token);
     private _setShowContactCard();
-    private _forceDisableShowContactCardOnPremises();
     private _generatePlaceHolder(identityTypeList);
     private _isInArray(s, a);
 }
@@ -20239,6 +22052,12 @@ export interface IEntityOperationsFacadeRequest {
 /**
  * @exemptedapi
  */
+export interface IEntityOperationsFacadeOptions {
+    loadMru?: boolean;
+}
+/**
+ * @exemptedapi
+ */
 export class EntityOperationsFacade extends Service.VssService {
     private _entityRetrieverPrepComplete;
     private _mruEntitiesPromise;
@@ -20252,7 +22071,7 @@ export class EntityOperationsFacade extends Service.VssService {
     isUserMruReady(): boolean;
     getMruEntitiesUnchecked(): Identities_Picker_RestClient.IEntity[];
     refreshUserMru(): IPromise<boolean>;
-    load(): IPromise<boolean>;
+    load(options?: IEntityOperationsFacadeOptions): IPromise<boolean>;
     /**
     *   Return only the MRU users or groups that have the prefix
     **/
@@ -20341,6 +22160,7 @@ export interface IEntity {
     signInAddress?: string;
     surname?: string;
     guest?: boolean;
+    active?: boolean;
     description?: string;
     image?: string;
     manager?: string;
@@ -20483,7 +22303,7 @@ export class ServiceHelpers {
     static _defaultGroupProperties: string[];
     static DefaultUserImage: string;
     static DefaultVsoGroupImage: string;
-    static DefaultAadGroupImage: string;
+    static DefaultRemoteGroupImage: string;
     static VisualStudioDirectory: string;
     static AzureActiveDirectory: string;
     static ActiveDirectory: string;
@@ -20864,7 +22684,25 @@ export class IdentitiesHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class IdentitiesHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class IdentitiesHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class IdentitiesHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class IdentitiesHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class IdentitiesHttpClient extends IdentitiesHttpClient3 {
@@ -20873,12 +22711,13 @@ export class IdentitiesHttpClient extends IdentitiesHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return IdentitiesHttpClient2_2
+ * @return IdentitiesHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): IdentitiesHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): IdentitiesHttpClient2_3;
 }
 declare module "VSS/Licensing/Contracts" {
 import VSS_Accounts_Contracts = require("VSS/Accounts/Contracts");
+import VSS_Common_Contracts = require("VSS/WebApi/Contracts");
 /**
  * Represents a license granted to a user in an account
  */
@@ -20913,6 +22752,15 @@ export interface AccountEntitlementUpdateModel {
      * Gets or sets the license for the entitlement
      */
     license: License;
+}
+export interface AccountLicenseUsage {
+    license: AccountUserLicense;
+    provisionedCount: number;
+    usedCount: number;
+}
+export interface AccountUserLicense {
+    license: number;
+    source: LicensingSource;
 }
 export interface ClientRightsContainer {
     certificateBytes: number[];
@@ -20955,6 +22803,35 @@ export interface ExtensionOperationResult {
     userId: string;
 }
 /**
+ * Container for service licensing rights
+ */
+export interface IServiceRight {
+    serviceLevel: VisualStudioOnlineServiceLevel;
+}
+/**
+ * Container for licensing rights
+ */
+export interface IUsageRight {
+    /**
+     * Rights data
+     */
+    attributes: {
+        [key: string]: any;
+    };
+    /**
+     * Rights expiration
+     */
+    expirationDate: Date;
+    /**
+     * Name, uniquely identifying a usage right
+     */
+    name: string;
+    /**
+     * Version
+     */
+    version: string;
+}
+/**
  * The base class for a specific license source and license
  */
 export interface License {
@@ -20969,11 +22846,66 @@ export enum LicensingSource {
     Msdn = 2,
     Profile = 3,
     Auto = 4,
+    Trial = 5,
+}
+export interface MsdnEntitlement {
+    /**
+     * Entilement id assigned to Entitlement in Benefits Database.
+     */
+    entitlementCode: string;
+    /**
+     * Entitlement Name e.g. Downloads, Chat.
+     */
+    entitlementName: string;
+    /**
+     * Type of Entitlement e.g. Downloads, Chat.
+     */
+    entitlementType: string;
+    /**
+     * Entitlement activation status
+     */
+    isActivated: boolean;
+    /**
+     * Entitlement availability
+     */
+    isEntitlementAvailable: boolean;
+    /**
+     * Write MSDN Channel into CRCT (Retail,MPN,VL,BizSpark,DreamSpark,MCT,FTE,Technet,WebsiteSpark,Other)
+     */
+    subscriptionChannel: string;
+    /**
+     * Subscription Expiration Date.
+     */
+    subscriptionExpirationDate: Date;
+    /**
+     * Subscription id which identifies the subscription itself. This is the Benefit Detail Guid from BMS.
+     */
+    subscriptionId: string;
+    /**
+     * Identifier of the subscription or benefit level.
+     */
+    subscriptionLevelCode: string;
+    /**
+     * Name of subscription level.
+     */
+    subscriptionLevelName: string;
+    /**
+     * Subscription Status Code (ACT, PND, INA ...).
+     */
+    subscriptionStatus: string;
 }
 export enum OperationResult {
     Success = 0,
     Warning = 1,
     Error = 2,
+}
+export interface TransformedAccountEntitlement {
+    assignmentDate: Date;
+    lastAccessedDate: Date;
+    license: License;
+    status: VSS_Accounts_Contracts.AccountUserStatus;
+    user: VSS_Common_Contracts.IdentityRef;
+    userId: string;
 }
 export enum VisualStudioOnlineServiceLevel {
     /**
@@ -21000,6 +22932,8 @@ export enum VisualStudioOnlineServiceLevel {
 export var TypeInfo: {
     AccountEntitlement: any;
     AccountEntitlementUpdateModel: any;
+    AccountLicenseUsage: any;
+    AccountUserLicense: any;
     ExtensionAssignment: any;
     ExtensionFilterOptions: {
         enumValues: {
@@ -21017,6 +22951,8 @@ export var TypeInfo: {
         };
     };
     ExtensionOperationResult: any;
+    IServiceRight: any;
+    IUsageRight: any;
     License: any;
     LicensingSource: {
         enumValues: {
@@ -21025,8 +22961,10 @@ export var TypeInfo: {
             "msdn": number;
             "profile": number;
             "auto": number;
+            "trial": number;
         };
     };
+    MsdnEntitlement: any;
     OperationResult: {
         enumValues: {
             "success": number;
@@ -21034,6 +22972,7 @@ export var TypeInfo: {
             "error": number;
         };
     };
+    TransformedAccountEntitlement: any;
     VisualStudioOnlineServiceLevel: {
         enumValues: {
             "none": number;
@@ -21052,8 +22991,13 @@ import VSS_WebApi = require("VSS/WebApi/RestClient");
 export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
     protected certificateApiVersion: string;
     protected clientRightsApiVersion: string;
+    protected entitlementsApiVersion: string;
+    protected entitlementsApiVersion_c01e9fd5: string;
+    protected entitlementsApiVersion_ea37be6f: string;
     protected extensionRegistrationApiVersion: string;
     protected extensionRightsApiVersion: string;
+    protected msdnApiVersion: string;
+    protected msdnApiVersion_69522c3f: string;
     protected serviceRightsApiVersion: string;
     protected usageApiVersion: string;
     protected usageRightsApiVersion: string;
@@ -21062,22 +23006,34 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      * [Preview API]
      *
      * @param {string} rightName
-     * @return IPromise<void>
+     * @return IPromise<Contracts.IUsageRight[]>
      */
-    getUsageRights(rightName?: string): IPromise<void>;
+    getUsageRights(rightName?: string): IPromise<Contracts.IUsageRight[]>;
     /**
      * [Preview API]
      *
-     * @return IPromise<void>
+     * @return IPromise<Contracts.AccountLicenseUsage[]>
      */
-    getAccountLicensesUsage(): IPromise<void>;
+    getAccountLicensesUsage(): IPromise<Contracts.AccountLicenseUsage[]>;
     /**
      * [Preview API]
      *
      * @param {string} rightName
+     * @return IPromise<Contracts.IServiceRight[]>
+     */
+    getServiceRights(rightName?: string): IPromise<Contracts.IServiceRight[]>;
+    /**
+     * [Preview API]
+     *
+     * @return IPromise<Contracts.MsdnEntitlement[]>
+     */
+    getEntitlements(): IPromise<Contracts.MsdnEntitlement[]>;
+    /**
+     * [Preview API]
+     *
      * @return IPromise<void>
      */
-    getServiceRights(rightName?: string): IPromise<void>;
+    getMsdnPresence(): IPromise<void>;
     /**
      * [Preview API]
      *
@@ -21102,6 +23058,47 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      */
     getExtensionLicenseData(extensionId: string): IPromise<VSS_Common_Contracts.ExtensionLicenseData>;
     /**
+     * [Preview API] Get the entitlements for a user
+     *
+     * @param {string} userId - The id of the user
+     * @return IPromise<Contracts.AccountEntitlement[]>
+     */
+    getAccountEntitlementForUser(userId: string): IPromise<Contracts.AccountEntitlement[]>;
+    /**
+     * [Preview API]
+     *
+     * @param {string} userId
+     * @return IPromise<void>
+     */
+    deleteUserEntitlements(userId: string): IPromise<void>;
+    /**
+     * [Preview API] Assign an explicit account entitlement
+     *
+     * @param {Contracts.AccountEntitlementUpdateModel} body - The update model for the entitlement
+     * @param {string} userId - The id of the user
+     * @return IPromise<Contracts.TransformedAccountEntitlement>
+     */
+    assignAccountEntitlementForUser(body: Contracts.AccountEntitlementUpdateModel, userId: string): IPromise<Contracts.TransformedAccountEntitlement>;
+    /**
+     * [Preview API]
+     *
+     * @return IPromise<Contracts.TransformedAccountEntitlement[]>
+     */
+    getAccountEntitlements(): IPromise<Contracts.TransformedAccountEntitlement[]>;
+    /**
+     * [Preview API]
+     *
+     * @return IPromise<Contracts.TransformedAccountEntitlement>
+     */
+    getAccountEntitlement(): IPromise<Contracts.TransformedAccountEntitlement>;
+    /**
+     * [Preview API] Assign an available entitilement to a user
+     *
+     * @param {string} userId - The user to which to assign the entitilement
+     * @return IPromise<Contracts.TransformedAccountEntitlement>
+     */
+    assignAvailableAccountEntitlement(userId: string): IPromise<Contracts.TransformedAccountEntitlement>;
+    /**
      * [Preview API]
      *
      * @param {string} rightName
@@ -21111,15 +23108,15 @@ export class CommonMethods2To3 extends VSS_WebApi.VssHttpClient {
      * @param {boolean} includeCertificate
      * @param {string} canary
      * @param {string} machineId
-     * @return IPromise<void>
+     * @return IPromise<Contracts.ClientRightsContainer>
      */
-    getClientRights(rightName?: string, productVersion?: string, edition?: string, relType?: string, includeCertificate?: boolean, canary?: string, machineId?: string): IPromise<void>;
+    getClientRights(rightName?: string, productVersion?: string, edition?: string, relType?: string, includeCertificate?: boolean, canary?: string, machineId?: string): IPromise<Contracts.ClientRightsContainer>;
     /**
      * [Preview API]
      *
-     * @return IPromise<void>
+     * @return IPromise<ArrayBuffer>
      */
-    getCertificate(): IPromise<void>;
+    getCertificate(): IPromise<ArrayBuffer>;
 }
 /**
  * @exemptedapi
@@ -21168,7 +23165,25 @@ export class LicensingHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class LicensingHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class LicensingHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class LicensingHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class LicensingHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class LicensingHttpClient extends LicensingHttpClient3 {
@@ -21177,9 +23192,9 @@ export class LicensingHttpClient extends LicensingHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return LicensingHttpClient2_2
+ * @return LicensingHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): LicensingHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): LicensingHttpClient2_3;
 }
 declare module "VSS/Locations" {
 import Contracts_Platform = require("VSS/Common/Contracts/Platform");
@@ -21536,11 +23551,71 @@ export class LocationsHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class LocationsHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class LocationsHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class LocationsHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class LocationsHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class LocationsHttpClient extends LocationsHttpClient3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+}
+declare module "VSS/Navigation/HubsProvider" {
+import Serialization = require("VSS/Serialization");
+/**
+ * Base class for hubs providers.
+ */
+export class HubsProvider implements IHubsProvider {
+    private _containerHubPromises;
+    private _containerHubCommonPromise;
+    private _refreshDelegates;
+    private _variesByOwner;
+    /**
+     * Create a hubs provider
+     *
+     * @param sameAtAllLevels True if the provider's items are different based on the owner control
+     */
+    constructor(variesByOwner: boolean);
+    /**
+     * Get the root contributed hub for this provider
+     *
+     * @param context hubs provider context
+     */
+    protected getRootContributedHub(context: IHubsProviderContext): IContributedHub | IPromise<IContributedHub>;
+    getContainerHub(context: IHubsProviderContext): IPromise<IContributedHub>;
+    invokeRefreshCallbacks(): void;
+    /**
+     * Get page data from a data provider contribution that is cached, optionally queueing an update of the data
+     * after reading from the cache
+     *
+     * @param cachedDataProviderContributionId Id of the data provider which caches data in localStorage
+     * @param primaryDataProviderContributionId Optional contribution id of a data provider to use if it exists. The cached data will not be used or updated if this exists.
+     * @param refreshCache If true and data was read from the cache, queue up a request to update it.
+     * @param contractMetadata Optional contract metadata to use when deserializing the JSON island data
+     */
+    getCachedPageData<T>(cachedDataProviderContributionId: string, primaryDataProviderContributionId?: string, refreshCache?: boolean, contractMetadata?: Serialization.ContractMetadata): T;
+    /**
+     * Always reloads provider data by queuing up a new request
+     *
+     * @param cachedDataProviderContributionId Id of the data provider
+     */
+    reloadCachedProviderData(cachedDataProviderContributionId: string): void;
 }
 }
 declare module "VSS/Navigation/Services" {
@@ -21758,7 +23833,25 @@ export class OperationsHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class OperationsHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class OperationsHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class OperationsHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class OperationsHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class OperationsHttpClient extends OperationsHttpClient3 {
@@ -21767,271 +23860,9 @@ export class OperationsHttpClient extends OperationsHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return OperationsHttpClient2_2
+ * @return OperationsHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): OperationsHttpClient2_2;
-}
-declare module "VSS/Organization/CollectionRestClient" {
-import VSS_Organization_Contracts = require("VSS/Organization/Contracts");
-import VSS_WebApi = require("VSS/WebApi/RestClient");
-/**
- * @exemptedapi
- */
-export class CollectionHttpClient3 extends VSS_WebApi.VssHttpClient {
-    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
-    /**
-     * [Preview API]
-     *
-     * @param {VSS_Organization_Contracts.Collection} resource
-     * @return IPromise<VSS_Organization_Contracts.Collection>
-     */
-    createCollection(resource: VSS_Organization_Contracts.Collection): IPromise<VSS_Organization_Contracts.Collection>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} collectionId
-     * @return IPromise<boolean>
-     */
-    deleteCollection(collectionId: string): IPromise<boolean>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} collectionId
-     * @param {string[]} propertyNames
-     * @return IPromise<VSS_Organization_Contracts.Collection>
-     */
-    getCollection(collectionId: string, propertyNames?: string[]): IPromise<VSS_Organization_Contracts.Collection>;
-    /**
-     * [Preview API]
-     *
-     * @return IPromise<VSS_Organization_Contracts.Collection[]>
-     */
-    getCollections(): IPromise<VSS_Organization_Contracts.Collection[]>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} collectionId
-     * @param {string} collectionName
-     * @return IPromise<boolean>
-     */
-    restoreCollection(collectionId: string, collectionName: string): IPromise<boolean>;
-    /**
-     * [Preview API]
-     *
-     * @param {VSS_Organization_Contracts.Collection} collection
-     * @param {string} collectionId
-     * @return IPromise<VSS_Organization_Contracts.Collection>
-     */
-    updateCollection(collection: VSS_Organization_Contracts.Collection, collectionId: string): IPromise<VSS_Organization_Contracts.Collection>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} collectionId
-     * @param {string[]} propertyNames
-     * @return IPromise<boolean>
-     */
-    deleteCollectionProperties(collectionId: string, propertyNames: string[]): IPromise<boolean>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} collectionId
-     * @param {any} propertiesCollection
-     * @return IPromise<boolean>
-     */
-    updateCollectionProperties(collectionId: string, propertiesCollection: any): IPromise<boolean>;
-}
-export class CollectionHttpClient extends CollectionHttpClient3 {
-    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
-}
-/**
- * Gets an http client targeting the latest released version of the APIs.
- *
- * @return CollectionHttpClient3
- */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): CollectionHttpClient3;
-}
-declare module "VSS/Organization/Contracts" {
-export enum AssignmentStatus {
-    Unassignable = 0,
-    Assignable = 10,
-    Assigned = 20,
-}
-export interface Collection {
-    data: {
-        [key: string]: any;
-    };
-    dateCreated: Date;
-    /**
-     * Identifier for a collection under an organization
-     */
-    id: string;
-    lastUpdated: Date;
-    /**
-     * The unqiue name of collection under an organziation
-     */
-    name: string;
-    owner: string;
-    preferredRegion: string;
-    /**
-     * Extended properties
-     */
-    properties: any;
-    status: CollectionStatus;
-}
-export enum CollectionSearchKind {
-    Unknown = 0,
-    ById = 1,
-    ByName = 2,
-}
-export enum CollectionStatus {
-    Unknown = 0,
-    Initial = 10,
-    Enabled = 20,
-    LogicallyDeleted = 30,
-    MarkedForPhysicalDelete = 40,
-}
-export enum HostCreationType {
-    None = 0,
-    PreCreated = 1,
-    OnDemand = 2,
-}
-export interface Organization {
-    collections: Collection[];
-    creatorId: string;
-    dateCreated: Date;
-    /**
-     * Identifier for an Organization
-     */
-    id: string;
-    lastUpdated: Date;
-    /**
-     * The globally unqiue name of the organziation
-     */
-    name: string;
-    primaryCollection: Collection;
-    /**
-     * Extended properties
-     */
-    properties: any;
-    tenantId: string;
-    type: OrganizationType;
-}
-export enum OrganizationSearchKind {
-    Unknown = 0,
-    ById = 1,
-    ByName = 2,
-}
-export enum OrganizationType {
-    Unknown = 0,
-    Personal = 1,
-    Work = 2,
-}
-export var TypeInfo: {
-    AssignmentStatus: {
-        enumValues: {
-            "unassignable": number;
-            "assignable": number;
-            "assigned": number;
-        };
-    };
-    Collection: any;
-    CollectionSearchKind: {
-        enumValues: {
-            "unknown": number;
-            "byId": number;
-            "byName": number;
-        };
-    };
-    CollectionStatus: {
-        enumValues: {
-            "unknown": number;
-            "initial": number;
-            "enabled": number;
-            "logicallyDeleted": number;
-            "markedForPhysicalDelete": number;
-        };
-    };
-    HostCreationType: {
-        enumValues: {
-            "none": number;
-            "preCreated": number;
-            "onDemand": number;
-        };
-    };
-    Organization: any;
-    OrganizationSearchKind: {
-        enumValues: {
-            "unknown": number;
-            "byId": number;
-            "byName": number;
-        };
-    };
-    OrganizationType: {
-        enumValues: {
-            "unknown": number;
-            "personal": number;
-            "work": number;
-        };
-    };
-};
-}
-declare module "VSS/Organization/OrganizationRestClient" {
-import Contracts = require("VSS/Organization/Contracts");
-import VSS_WebApi = require("VSS/WebApi/RestClient");
-/**
- * @exemptedapi
- */
-export class OrganizationHttpClient3 extends VSS_WebApi.VssHttpClient {
-    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
-    /**
-     * [Preview API]
-     *
-     * @param {Contracts.Organization} resource
-     * @return IPromise<Contracts.Organization>
-     */
-    createOrganization(resource: Contracts.Organization): IPromise<Contracts.Organization>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} organizationId
-     * @param {string[]} propertyNames
-     * @return IPromise<Contracts.Organization>
-     */
-    getOrganization(organizationId: string, propertyNames?: string[]): IPromise<Contracts.Organization>;
-    /**
-     * [Preview API]
-     *
-     * @param {Contracts.Organization} organization
-     * @param {string} organizationId
-     * @return IPromise<Contracts.Organization>
-     */
-    updateOrganization(organization: Contracts.Organization, organizationId: string): IPromise<Contracts.Organization>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} organizationId
-     * @param {string[]} propertyNames
-     * @return IPromise<boolean>
-     */
-    deleteOrganizationProperties(organizationId: string, propertyNames: string[]): IPromise<boolean>;
-    /**
-     * [Preview API]
-     *
-     * @param {string} organizationId
-     * @param {any} propertiesCollection
-     * @return IPromise<boolean>
-     */
-    updateOrganizationProperties(organizationId: string, propertiesCollection: any): IPromise<boolean>;
-}
-export class OrganizationHttpClient extends OrganizationHttpClient3 {
-    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
-}
-/**
- * Gets an http client targeting the latest released version of the APIs.
- *
- * @return OrganizationHttpClient3
- */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): OrganizationHttpClient3;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): OperationsHttpClient2_3;
 }
 declare module "VSS/Performance" {
 import Telemetry = require("VSS/Telemetry/Services");
@@ -22166,6 +23997,8 @@ export interface IResourceTypeStats {
     duration: number;
 }
 export interface IBundleLoadStats {
+    downloadStartTime: number;
+    downloadDuration: number;
     innerLoad: number;
     innerStartTime: number;
     outerLoad: number;
@@ -22692,8 +24525,225 @@ export class ProfileHttpClient3 extends CommonMethods2To3 {
      * @return IPromise<void>
      */
     setAvatar(container: any, id: string): IPromise<void>;
+    /**
+     * [Preview API]
+     *
+     * @param {boolean} includeAvatar
+     * @return IPromise<Contracts.Profile>
+     */
+    getUserDefaults(includeAvatar?: boolean): IPromise<Contracts.Profile>;
+    /**
+     * [Preview API]
+     *
+     * @param {string} id
+     * @return IPromise<Contracts.Profile>
+     */
+    refreshUserDefaults(id: string): IPromise<Contracts.Profile>;
+}
+export class ProfileHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<void>
+     */
+    deleteProfileAttribute(id: string, descriptor: string): IPromise<void>;
+    /**
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<Contracts.ProfileAttribute>
+     */
+    getProfileAttribute(id: string, descriptor: string): IPromise<Contracts.ProfileAttribute>;
+    /**
+     * @param {string} id
+     * @param {string} partition
+     * @param {string} modifiedSince
+     * @param {string} modifiedAfterRevision
+     * @param {boolean} withCoreAttributes
+     * @param {string} coreAttributes
+     * @return IPromise<Contracts.ProfileAttribute[]>
+     */
+    getProfileAttributes(id: string, partition: string, modifiedSince?: string, modifiedAfterRevision?: string, withCoreAttributes?: boolean, coreAttributes?: string): IPromise<Contracts.ProfileAttribute[]>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<void>
+     */
+    setProfileAttribute(container: any, id: string, descriptor: string): IPromise<void>;
+    /**
+     * @param {VSS_Common_Contracts.VssJsonCollectionWrapperV<Contracts.ProfileAttributeBase<any>[]>} attributesCollection
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    setProfileAttributes(attributesCollection: VSS_Common_Contracts.VssJsonCollectionWrapperV<Contracts.ProfileAttributeBase<any>[]>, id: string): IPromise<void>;
+    /**
+     * @param {string} id
+     * @param {string} size
+     * @param {string} format
+     * @return IPromise<Contracts.Avatar>
+     */
+    getAvatar(id: string, size?: string, format?: string): IPromise<Contracts.Avatar>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @param {string} size
+     * @param {string} format
+     * @param {string} displayName
+     * @return IPromise<Contracts.Avatar>
+     */
+    getAvatarPreview(container: any, id: string, size?: string, format?: string, displayName?: string): IPromise<Contracts.Avatar>;
+    /**
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    resetAvatar(id: string): IPromise<void>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    setAvatar(container: any, id: string): IPromise<void>;
 }
 export class ProfileHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<void>
+     */
+    deleteProfileAttribute(id: string, descriptor: string): IPromise<void>;
+    /**
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<Contracts.ProfileAttribute>
+     */
+    getProfileAttribute(id: string, descriptor: string): IPromise<Contracts.ProfileAttribute>;
+    /**
+     * @param {string} id
+     * @param {string} partition
+     * @param {string} modifiedSince
+     * @param {string} modifiedAfterRevision
+     * @param {boolean} withCoreAttributes
+     * @param {string} coreAttributes
+     * @return IPromise<Contracts.ProfileAttribute[]>
+     */
+    getProfileAttributes(id: string, partition: string, modifiedSince?: string, modifiedAfterRevision?: string, withCoreAttributes?: boolean, coreAttributes?: string): IPromise<Contracts.ProfileAttribute[]>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<void>
+     */
+    setProfileAttribute(container: any, id: string, descriptor: string): IPromise<void>;
+    /**
+     * @param {VSS_Common_Contracts.VssJsonCollectionWrapperV<Contracts.ProfileAttributeBase<any>[]>} attributesCollection
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    setProfileAttributes(attributesCollection: VSS_Common_Contracts.VssJsonCollectionWrapperV<Contracts.ProfileAttributeBase<any>[]>, id: string): IPromise<void>;
+    /**
+     * @param {string} id
+     * @param {string} size
+     * @param {string} format
+     * @return IPromise<Contracts.Avatar>
+     */
+    getAvatar(id: string, size?: string, format?: string): IPromise<Contracts.Avatar>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @param {string} size
+     * @param {string} format
+     * @param {string} displayName
+     * @return IPromise<Contracts.Avatar>
+     */
+    getAvatarPreview(container: any, id: string, size?: string, format?: string, displayName?: string): IPromise<Contracts.Avatar>;
+    /**
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    resetAvatar(id: string): IPromise<void>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    setAvatar(container: any, id: string): IPromise<void>;
+    /**
+     * @return IPromise<Contracts.Country[]>
+     */
+    getCountries(): IPromise<Contracts.Country[]>;
+}
+export class ProfileHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<void>
+     */
+    deleteProfileAttribute(id: string, descriptor: string): IPromise<void>;
+    /**
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<Contracts.ProfileAttribute>
+     */
+    getProfileAttribute(id: string, descriptor: string): IPromise<Contracts.ProfileAttribute>;
+    /**
+     * @param {string} id
+     * @param {string} partition
+     * @param {string} modifiedSince
+     * @param {string} modifiedAfterRevision
+     * @param {boolean} withCoreAttributes
+     * @param {string} coreAttributes
+     * @return IPromise<Contracts.ProfileAttribute[]>
+     */
+    getProfileAttributes(id: string, partition: string, modifiedSince?: string, modifiedAfterRevision?: string, withCoreAttributes?: boolean, coreAttributes?: string): IPromise<Contracts.ProfileAttribute[]>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @param {string} descriptor
+     * @return IPromise<void>
+     */
+    setProfileAttribute(container: any, id: string, descriptor: string): IPromise<void>;
+    /**
+     * @param {VSS_Common_Contracts.VssJsonCollectionWrapperV<Contracts.ProfileAttributeBase<any>[]>} attributesCollection
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    setProfileAttributes(attributesCollection: VSS_Common_Contracts.VssJsonCollectionWrapperV<Contracts.ProfileAttributeBase<any>[]>, id: string): IPromise<void>;
+    /**
+     * @param {string} id
+     * @param {string} size
+     * @param {string} format
+     * @return IPromise<Contracts.Avatar>
+     */
+    getAvatar(id: string, size?: string, format?: string): IPromise<Contracts.Avatar>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @param {string} size
+     * @param {string} format
+     * @param {string} displayName
+     * @return IPromise<Contracts.Avatar>
+     */
+    getAvatarPreview(container: any, id: string, size?: string, format?: string, displayName?: string): IPromise<Contracts.Avatar>;
+    /**
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    resetAvatar(id: string): IPromise<void>;
+    /**
+     * @param {any} container
+     * @param {string} id
+     * @return IPromise<void>
+     */
+    setAvatar(container: any, id: string): IPromise<void>;
+    /**
+     * @return IPromise<Contracts.Country[]>
+     */
+    getCountries(): IPromise<Contracts.Country[]>;
+}
+export class ProfileHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
     /**
      * @param {string} id
@@ -22768,9 +24818,9 @@ export class ProfileHttpClient extends ProfileHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return ProfileHttpClient2_2
+ * @return ProfileHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): ProfileHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): ProfileHttpClient2_3;
 }
 declare module "VSS/SDK/Services/Dialogs" {
 import Contracts_Platform = require("VSS/Common/Contracts/Platform");
@@ -23055,7 +25105,7 @@ export class SearchCore<T> {
      *
      * @param query Query to run search on
      */
-    beginSearch(query: string): void;
+    beginSearch(query: string): T[];
     /**
      * Returns the search strategy currently being used.
      *
@@ -23263,8 +25313,9 @@ export class SearchAdapter<T> {
      *
      * @param results An array of items
      * @param finished Represents whether or not the search is finished
+     * @param query search query
      */
-    handleResults(results: T[], finished: boolean): void;
+    handleResults(results: T[], finished: boolean, query?: string): void;
     /**
      *     Handles an error being thrown in the search process.
      *
@@ -23465,6 +25516,12 @@ export class SecurityRolesHttpClient3 extends CommonMethods2_2To3 {
 /**
  * @exemptedapi
  */
+export class SecurityRolesHttpClient2_3 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class SecurityRolesHttpClient2_2 extends CommonMethods2_2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
@@ -23474,9 +25531,9 @@ export class SecurityRolesHttpClient extends SecurityRolesHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return SecurityRolesHttpClient2_2
+ * @return SecurityRolesHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): SecurityRolesHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): SecurityRolesHttpClient2_3;
 }
 declare module "VSS/Security/Contracts" {
 /**
@@ -23859,8 +25916,36 @@ export class SecurityHttpClient3 extends CommonMethods2_2To3 {
 /**
  * @exemptedapi
  */
+export class SecurityHttpClient2_3 extends CommonMethods2_2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class SecurityHttpClient2_2 extends CommonMethods2_2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+export class SecurityHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * @param {string} securityNamespaceId
+     * @param {number} permissions
+     * @param {string} token
+     * @param {boolean} alwaysAllowAdministrators
+     * @return IPromise<boolean>
+     */
+    hasPermission(securityNamespaceId: string, permissions?: number, token?: string, alwaysAllowAdministrators?: boolean): IPromise<boolean>;
+}
+export class SecurityHttpClient2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * @param {string} securityNamespaceId
+     * @param {number} permissions
+     * @param {string} token
+     * @param {boolean} alwaysAllowAdministrators
+     * @return IPromise<boolean>
+     */
+    hasPermission(securityNamespaceId: string, permissions?: number, token?: string, alwaysAllowAdministrators?: boolean): IPromise<boolean>;
 }
 export class SecurityHttpClient extends SecurityHttpClient3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
@@ -23868,9 +25953,9 @@ export class SecurityHttpClient extends SecurityHttpClient3 {
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return SecurityHttpClient2_2
+ * @return SecurityHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): SecurityHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): SecurityHttpClient2_3;
 }
 declare module "VSS/Serialization" {
 /**
@@ -24141,6 +26226,86 @@ export class LocalSettingsService implements Service.ILocalService {
     private _getScopedKey(key, scope);
 }
 }
+declare module "VSS/Settings/RestClient" {
+import VSS_WebApi = require("VSS/WebApi/RestClient");
+/**
+ * @exemptedapi
+ */
+export class SettingsHttpClient3 extends VSS_WebApi.VssHttpClient {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+    /**
+     * [Preview API] Get all setting entries for the given user/all-users scope
+     *
+     * @param {string} userScope - User-Scope at which to get the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} key - Optional key under which to filter all the entries
+     * @return IPromise<{ [key: string] : any; }>
+     */
+    getEntries(userScope: string, key?: string): IPromise<{
+        [key: string]: any;
+    }>;
+    /**
+     * [Preview API] Remove the entry or entries under the specified path
+     *
+     * @param {string} userScope - User-Scope at which to remove the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} key - Root key of the entry or entries to remove
+     * @return IPromise<void>
+     */
+    removeEntries(userScope: string, key: string): IPromise<void>;
+    /**
+     * [Preview API] Get all setting entries for the given user/all-users scope
+     *
+     * @param {{ [key: string] : any; }} entries
+     * @param {string} userScope - User-Scope at which to get the value. Should be "me" for the current user or "host" for all users.
+     * @return IPromise<void>
+     */
+    setEntries(entries: {
+        [key: string]: any;
+    }, userScope: string): IPromise<void>;
+    /**
+     * [Preview API] Get all setting entries for the given named scope
+     *
+     * @param {string} userScope - User-Scope at which to get the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} scopeName - Scope at which to get the setting for (e.g. "project" or "team")
+     * @param {string} scopeValue - Value of the scope (e.g. the project or team id)
+     * @param {string} key - Optional key under which to filter all the entries
+     * @return IPromise<{ [key: string] : any; }>
+     */
+    getEntriesForScope(userScope: string, scopeName: string, scopeValue: string, key?: string): IPromise<{
+        [key: string]: any;
+    }>;
+    /**
+     * [Preview API] Remove the entry or entries under the specified path
+     *
+     * @param {string} userScope - User-Scope at which to remove the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} scopeName - Scope at which to get the setting for (e.g. "project" or "team")
+     * @param {string} scopeValue - Value of the scope (e.g. the project or team id)
+     * @param {string} key - Root key of the entry or entries to remove
+     * @return IPromise<void>
+     */
+    removeEntriesForScope(userScope: string, scopeName: string, scopeValue: string, key: string): IPromise<void>;
+    /**
+     * [Preview API] Get all setting entries for the given named scope
+     *
+     * @param {{ [key: string] : any; }} entries
+     * @param {string} userScope - User-Scope at which to get the value. Should be "me" for the current user or "host" for all users.
+     * @param {string} scopeName - Scope at which to get the setting for (e.g. "project" or "team")
+     * @param {string} scopeValue - Value of the scope (e.g. the project or team id)
+     * @return IPromise<void>
+     */
+    setEntriesForScope(entries: {
+        [key: string]: any;
+    }, userScope: string, scopeName: string, scopeValue: string): IPromise<void>;
+}
+export class SettingsHttpClient extends SettingsHttpClient3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * Gets an http client targeting the latest released version of the APIs.
+ *
+ * @return SettingsHttpClient3
+ */
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): SettingsHttpClient3;
+}
 declare module "VSS/Telemetry/Contracts" {
 export interface CustomerIntelligenceEvent {
     area: string;
@@ -24155,9 +26320,11 @@ export enum DelegatedAppTokenType {
 }
 export interface WebSessionToken {
     appId: string;
+    extensionName: string;
     force: boolean;
     name: string;
     namedTokenId: string;
+    publisherName: string;
     token: string;
     tokenType: DelegatedAppTokenType;
     validTo: Date;
@@ -24195,7 +26362,25 @@ export class CustomerIntelligenceHttpClient3 extends CommonMethods2To3 {
 /**
  * @exemptedapi
  */
+export class CustomerIntelligenceHttpClient2_3 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
 export class CustomerIntelligenceHttpClient2_2 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class CustomerIntelligenceHttpClient2_1 extends CommonMethods2To3 {
+    constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
+}
+/**
+ * @exemptedapi
+ */
+export class CustomerIntelligenceHttpClient2 extends CommonMethods2To3 {
     constructor(rootRequestPath: string, options?: VSS_WebApi.IVssHttpClientOptions);
 }
 export class CustomerIntelligenceHttpClient extends CustomerIntelligenceHttpClient3 {
@@ -24204,9 +26389,9 @@ export class CustomerIntelligenceHttpClient extends CustomerIntelligenceHttpClie
 /**
  * Gets an http client targeting the latest released version of the APIs.
  *
- * @return CustomerIntelligenceHttpClient2_2
+ * @return CustomerIntelligenceHttpClient2_3
  */
-export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): CustomerIntelligenceHttpClient2_2;
+export function getClient(options?: VSS_WebApi.IVssHttpClientOptions): CustomerIntelligenceHttpClient2_3;
 }
 declare module "VSS/Telemetry/Services" {
 /**
@@ -24253,6 +26438,14 @@ export function publishEvent(eventData: TelemetryEventData, immediate?: boolean)
  * Flush queued event data to be sent to CustomerIntelligence service and App Insights
  */
 export function flush(): IPromise<void>;
+}
+declare module "VSS/Utils/Accessibility" {
+/**
+ * Causes screen readers to read the given message.
+ * @param message
+ * @param assertive if true, the screen reader will read the announcement immediately, instead of waiting for "the next graceful opportunity"
+ */
+export function announce(message: string, assertive?: boolean): void;
 }
 declare module "VSS/Utils/Array" {
 /**
@@ -24392,6 +26585,26 @@ export function addRange<T>(array: T[], items: T[]): void;
     */
 export function remove<T>(array: T[], item: T): boolean;
 /**
+ * Remove items from array that satisfy the predicate.
+ * @param array
+ * @param predicate
+ */
+export function removeWhere<T>(array: T[], predicate: (element: T) => boolean, count?: number, startAt?: number): void;
+/**
+ * Removes the given index from the array
+ * @param array
+ * @param index
+ * @return boolean false if the index is out of bounds.
+ */
+export function removeAtIndex<T>(array: T[], index: number): boolean;
+/**
+ * Removes all of the given indexes from array
+ * @param array
+ * @param indexes
+ * @return boolean false if any index is out of bounds
+ */
+export function removeAllIndexes<T>(array: T[], indexes: number[]): boolean;
+/**
     * @param array
     */
 export function clear<T>(array: T[]): void;
@@ -24404,6 +26617,21 @@ export function clear<T>(array: T[]): void;
  * @returns An array that is the intersection of the values from the two input arrays (as determined by the comparer). The result array will be sorted. If there is no intersection, an empty array is returned.
  */
 export function intersectUniqueSorted<T>(sortedUniqueArray1: T[], sortedUniqueArray2: T[], comparer?: IComparer<T>): T[];
+export class StableSorter<T> {
+    private cmpFunc;
+    constructor(cmpFunc: (a: T, b: T) => number);
+    private msort(array, begin, end);
+    private merge_sort(array);
+    private merge(array, begin, begin_right, end);
+    private arr_swap(arr, a, b);
+    private insert(array, begin, end, v);
+    /**
+     * Returns a copy of array that is sorted using a stable sorting routine
+     * @param array
+     * @return sorted array
+     */
+    sort(array: T[], inPlace?: boolean): T[];
+}
 }
 declare module "VSS/Utils/Clipboard" {
 import Dialogs_NoRequire = require("VSS/Controls/Dialogs");
@@ -24471,7 +26699,9 @@ export class DelayedFunction {
     private _interval;
     private _func;
     private _timeoutHandle;
+    private _cooldownHandle;
     private _name;
+    private _invokeOnCooldownComplete;
     /**
      * Creates an object that can be used to delay-execute the specified method.
      *
@@ -24493,7 +26723,17 @@ export class DelayedFunction {
     /**
      * Cancels any pending operation (stops the timer).
      */
-    cancel(): void;
+    cancel(clearCooldown?: boolean): void;
+    /**
+     * Clears the current cooldown
+     * @param cancelScheduledInvocation (boolean) true to ignore any invocation that is
+     *        scheduled to occur after the cooldown is finished.
+     */
+    clearCooldown(cancelScheduledInvocation?: boolean): void;
+    /**
+     * Resets the cooldown back to [delay] ms.
+     */
+    extendCooldown(): void;
     /**
      * Invokes the method immediately (canceling an existing timer).
      */
@@ -24518,6 +26758,23 @@ export class DelayedFunction {
      * @return True if this operation is already in progress
      */
     isPending(): boolean;
+    /**
+     * Is the delayed function in a "cooldown" state (operation
+     * completed recently)
+     *
+     * @return True if it has been less than [delay] ms since
+     * the last invocation of the function.
+     */
+    isCoolingDown(): boolean;
+    /**
+     * Schedule this delayed function to execute when the cooldown is complete.
+     */
+    invokeOnCooldownComplete(): void;
+    /**
+     * Invokes the delegate and starts (or restars) the cooldown period.
+     */
+    private _invoke();
+    private _startCooldown();
 }
 /**
  * Executes the provided function after the specified amount of time
@@ -24530,15 +26787,47 @@ export class DelayedFunction {
  */
 export function delay(instance: any, ms: number, method: Function, data?: any[]): DelayedFunction;
 /**
- * Creates a delegate that is delayed for the specified interval when invoked. Subsequent calls to the returned delegate reset the timer.
+ * Options to control the behavior of the Throttled Delegate.
+ * Note, these are flags, so multiple options can be OR'd together.
+ */
+export enum ThrottledDelegateOptions {
+    /**
+     * Never call the delegate until after the elapsed time has passed since the
+     * most recent call to the delegate.
+     */
+    Default = 0,
+    /**
+     * This throttled delegate will be invoked immediately on the first call, then
+     * at most every n milliseconds thereafter
+     */
+    Immediate = 1,
+    /**
+     * If Immediate is set, this determines if a call that is made during the cooldown
+     * period will be ignored or queued up to be executed when the cooldown is done.
+     */
+    QueueNext = 2,
+    /**
+     * If set, subsequent calls to the delegate will result in a simple noop during
+     * the cooldown period (as opposed to resetting the timer).
+     * If not set, each call to the delegate will reset the timer. This means the function
+     * might never get executed as long as the delegate continues to be called fast enough.
+     */
+    NeverResetTimer = 4,
+}
+/**
+ * Creates a delegate that is delayed for the specified interval when invoked.
+ * Subsequent calls to the returned delegate reset the timer. Using the options
+ * parameter, callers can determine if the invocation happens on the rising
+ * edge (immediately when the delegate is called) or on the falling edge (Default).
  *
  * @param instance Context to use when calling the provided function
  * @param ms Delay in milliseconds to wait before executing the Function
  * @param method Method to execute
  * @param data Arguments to pass to the method
+ * @param options Specify the behavior of when the delegate gets invoked
  * @return The delayed delegate function.
  */
-export function throttledDelegate(instance: any, ms: number, method: Function, data?: any[]): IArgsFunctionR<any>;
+export function throttledDelegate(instance: any, ms: number, method: Function, data?: any[], options?: ThrottledDelegateOptions): IArgsFunctionR<any>;
 /**
  * Splits a string that contains a list of comma-separated (signed) integer values into an array
  *
@@ -24651,6 +26940,16 @@ export function parseXml(xml: string): any;
  * @return True if two objects are deepEqual, otherwise false.
  */
 export function equals(first: any, second: any): boolean;
+/**
+ * Executes the provided function after the specified amount of time
+ * @param functionDelegate Function to execute
+ * @param delay Delay in milliseconds to wait before executing the Function
+ * @param maxAttempt The max number of attemp should try, if not specified, it will continus polling
+ * @param firstDelay Delay in milliseconds to wait before executing the Function for the first time (default 0)
+ * @param shouldStopDelegate Callback to determine whether to stop the poll or not
+ * @param reachMaxAttemptCallback Callback when max attempted is reached
+ */
+export function poll(functionDelegate: (sucessCallback: IResultCallback, errorCallback?: IErrorCallback) => void, delay: number, maxAttempt: number, firstDelay?: number, shouldStopDelegate?: (result: any) => boolean, reachMaxAttemptCallback?: () => void): void;
 export var documentSelection: any;
 }
 declare module "VSS/Utils/Culture" {
@@ -24989,6 +27288,29 @@ export function combinePaths(path1: string, path2: string, pathSeparator?: strin
 * @return resulting string that ends with the separator
 */
 export function ensureTrailingSeparator(path: string, pathSeparator?: string): string;
+/**
+ * Get parts of a path.
+ *
+ * @param path Path to extract parts.
+ * @param pathSeparator Path separator (default '/').
+ */
+export function getPathParts(path: string, pathSeparator?: string): string[];
+/**
+ * Gets the directory part of the specified path.
+ *
+ * @param path Path to extract directory name.
+ * @param pathSeparator Path separator (default '/').
+ * @returns {string}
+ */
+export function getDirectoryName(path: string, pathSeparator?: string): string;
+/**
+ * Gets the filename part of the specified path.
+ *
+ * @param path Path to extract file name.
+ * @param pathSeparator Path separator (default '/').
+ * @returns {string}
+ */
+export function getFileName(path: string, pathSeparator?: string): string;
 }
 declare module "VSS/Utils/Html" {
 export module HtmlNormalizer {
@@ -25017,6 +27339,11 @@ export module HtmlNormalizer {
      * @return sanitized Html
      */
     function sanitize(html: string): string;
+    /**
+     * Removes all tags from the specified html and attempts keep newlines in the proper places (best effort).
+     * @param html Html to convert to plain text.
+     */
+    function convertToPlainText(html: string): string;
 }
 export class TemplateEngine {
     /**
@@ -25378,6 +27705,7 @@ export enum KeyCode {
     H = 72,
     T = 84,
     QUESTION_MARK = 191,
+    CONTEXT_MENU = 93,
 }
 export module KeyUtils {
     /**
@@ -25581,7 +27909,13 @@ export module BrowserCheckUtils {
     function isFirefox(): boolean;
     function isChrome(): boolean;
     function isMozilla(): boolean;
+    /**
+     * Returns true if browser is Internet Explorer 10 or earlier.
+     */
     function isMsie(): boolean;
+    /**
+     *  Returns true if the browser is Internet Explorer
+     */
     function isIE(): boolean;
     function isEdge(): boolean;
     function getVersion(): string;
@@ -25598,26 +27932,6 @@ export module SelectionUtils {
 export module HtmlInsertionUtils {
     function pasteHtmlAtCaret(html: string, parentWindow?: Window): void;
 }
-export enum HotKeyCombination {
-    None = 0,
-    Ctrl = 1,
-    Alt = 2,
-    Shift = 3,
-    CtrlShift = 4,
-    CtrlAlt = 5,
-}
-export interface HotKey {
-    combination: HotKeyCombination;
-    which: number;
-    displayText: string;
-    handler: () => boolean;
-}
-export interface IGlobalHotKeyManager {
-    registerHotKey: (hotKey: HotKey) => void;
-    registerCtrlAltHotkey: (which: number, text: string, handler: () => boolean) => void;
-    dispose: () => void;
-}
-export var globalHotKeyManager: IGlobalHotKeyManager;
 export interface ISectionManager {
     identifySections: () => void;
     nextSection: () => boolean;
@@ -25636,6 +27950,16 @@ export function calculateTreePath(includeRoot: boolean, separator: string, textF
 export function walkTree(f: IFunctionPPR<any, any, void>): void;
 export function injectStylesheets(cssReferenceUrls: string[], baseUrl?: string): void;
 export function accessible(element: JQuery, handler?: Function): JQuery;
+/**
+ * Show a tooltip on hover, only if the text of the element overflows the visible area.
+ * @param element element with text-overflow: ellipsis set
+ * @param$options titleTarget element whose text will be used to populate the tooltip, only need specify if different than $element
+ *                titleText text to set the title to, otherwise use the $titleTarget's .text() or .val()
+ */
+export function tooltipIfOverflow(element: HTMLElement | HTMLInputElement, options?: {
+    titleTarget?: HTMLElement | HTMLInputElement;
+    titleText?: string;
+}): void;
 export function Watermark(element: JQuery, ...args: any[]): JQuery;
 }
 declare module "VSS/Utils/Url" {
@@ -25793,6 +28117,7 @@ import Q = require("q");
 export var uiCulture: string;
 export var errorHandler: ErrorHandler;
 export var globalProgressIndicator: GlobalProgressIndicator;
+export var globalMessageIndicator: GlobalMessageIndicator;
 export var activtyStatsCollector: ActivtyStatsCollector;
 /**
  * @param data
@@ -25971,10 +28296,47 @@ export class GlobalProgressIndicator {
     getPendingActions(): string[];
 }
 export function hasUnloadRequest(): boolean;
+export class GlobalMessageIndicator {
+    updateGlobalMessageIfEmpty(message: string): void;
+}
 export function classExtend(ctor: any, members: any): any;
 export function getTypeName(type: any): string;
 export function initClassPrototype(ctor: Function, members: any): void;
 export function getModuleBase(moduleName: string): string;
+/**
+* Options for which modules to include in any dynamic bundle calls for exclusion. The
+* default is 'AllLoadedModules' which ensures the minimum set of scripts are included
+* in the bundle. This results in smaller bundles, but most-likely unique bundles across
+* different pages, as they will likely each have a unique set of already-loaded scripts.
+* The 'CommonModules' option ensures that the bundle will be the same across all pages.
+*/
+export enum DynamicModuleExcludeOptions {
+    /**
+    * No modules are excluded. The resulting bundle is guaranteed to have the requested script and all dependencies.
+    */
+    NoExcludes = 0,
+    /**
+    * Modules from the common bundle are excluded. The resulting bundle should be the same across pages (given that the common bundle is the same across pages).
+    */
+    CommonModules = 1,
+    /**
+    * Modules from the common and area bundles are excluded. The resulting bundle should be the same across pages where the same area module is loaded.
+    */
+    CommonAndAreaModules = 2,
+    /**
+    * Modules from the common, area and view bundles are excluded. The resulting bundle should be always same on the particular page (may differ in other page).
+    */
+    AllPageBundles = 3,
+}
+/**
+* Options for async require modules call
+*/
+export interface IModuleLoadOptions {
+    /**
+    * Options for which modules to include in any dynamic bundle calls for exclusion.
+    */
+    excludeOptions?: DynamicModuleExcludeOptions;
+}
 /**
 * Issue a require statement for the specified modules and invoke the given callback method once available.
 * This is a wrapper around the requireJS 'require' statement which ensures that the missing modules are
@@ -25992,7 +28354,7 @@ export function using(moduleNames: string[], callback: Function): void;
 *
 * @param moduleNames An array of AMD modules to asynchronously require
 */
-export function requireModules(moduleNames: string[]): Q.Promise<any>;
+export function requireModules(moduleNames: string[], options?: IModuleLoadOptions): Q.Promise<any>;
 export function tfsModuleLoaded(moduleName: string, moduleExports: any): void;
 }
 declare module "VSS/WebApi/Constants" {
@@ -26062,6 +28424,16 @@ export module FeatureAvailabilityResourceIds {
     var AreaId: string;
     var FeatureAvailabilityAreaName: string;
 }
+export module FeatureManagementResourceIds {
+    var FeaturesLocationId: string;
+    var FeatureStatesLocationId: string;
+    var NamedScopeFeatureStatesLocationId: string;
+    var FeatureManagementAreaName: string;
+    var FeaturesResource: string;
+    var FeatureStatesResource: string;
+    var FeatureStatesLocationIdString: string;
+    var NamedScopeFeatureStatesLocationIdString: string;
+}
 export module IdentityMruResourceIds {
     var MruIdentitiesLocationId: string;
     var AreaId: string;
@@ -26085,16 +28457,26 @@ export module OperationsResourceIds {
     var OperationsApi: string;
 }
 export module ServiceInstanceTypes {
+    var MPS: string;
     var SPS: string;
     var TFS: string;
     var TFSOnPremises: string;
     var SpsExtension: string;
     var SDKSample: string;
+    var MPSString: string;
     var SPSString: string;
     var TFSString: string;
     var TFSOnPremisesString: string;
     var SpsExtensionString: string;
     var SDKSampleString: string;
+}
+export module SettingsApiResourceIds {
+    var SettingEntriesLocationId: string;
+    var NamedScopeSettingEntriesLocationId: string;
+    var SettingsAreaName: string;
+    var SettingEntriesResource: string;
+    var SettingEntriesLocationIdString: string;
+    var NamedScopeSettingEntriesLocationIdString: string;
 }
 }
 declare module "VSS/WebApi/Contracts" {
@@ -26174,6 +28556,32 @@ export enum ConnectOptions {
      * When true will only return non inherited definitions. Only valid at non-deployment host.
      */
     IncludeNonInheritedDefinitionsOnly = 8,
+}
+/**
+ * Defines an "actor" for an event.
+ */
+export interface EventActor {
+    /**
+     * Required: This is the identity of the user for the specified role.
+     */
+    id: string;
+    /**
+     * Required: The event specific name of a role.
+     */
+    role: string;
+}
+/**
+ * Defines a scope for an event.
+ */
+export interface EventScope {
+    /**
+     * Required: This is the identity of the scope for the type.
+     */
+    id: string;
+    /**
+     * Required: The event specific type of a scope.
+     */
+    type: string;
 }
 export interface ExtensionLicenseData {
     createdDate: Date;
@@ -26288,6 +28696,31 @@ export interface VssJsonCollectionWrapperV<T> extends VssJsonCollectionWrapperBa
 }
 export interface VssJsonCollectionWrapperBase {
     count: number;
+}
+/**
+ * This is the type used for firing notifications intended for the subsystem in the Notifications SDK. For components that can't take a dependency on the Notifications SDK directly, they can use ITeamFoundationEventService.PublishNotification and the Notifications SDK ISubscriber implementation will get it.
+ */
+export interface VssNotificationEvent {
+    /**
+     * Optional: A list of actors which are additional identities with corresponding roles that are relevant to the event.
+     */
+    actors: EventActor[];
+    /**
+     * Optional: A list of artifacts referenced or impacted by this event.
+     */
+    artifactUris: string[];
+    /**
+     * Required: The event payload.  If Data is a string, it must be in Json or XML format.  Otherwise it must have a serialization format attribute.
+     */
+    data: any;
+    /**
+     * Required: The name of the event.  This event must be registered in the context it is being fired.
+     */
+    eventType: string;
+    /**
+     * Optional: A list of scopes which are are relevant to the event.
+     */
+    scopes: EventScope[];
 }
 export interface WrappedException {
     customProperties: {
@@ -26442,6 +28875,11 @@ export interface IVssHttpClientOptions {
      * Current command for activity logging.
      */
     command?: string;
+    /**
+    * If true, include links and urls (typically Uri properties) in the JSON responses. If false (default), then
+    * send an excludeUrls=true header to suppress the generation of links in the JSON responses of requests from this client.
+    */
+    includeUrls?: boolean;
 }
 /**
 * Base class that should be used (derived from) to make requests to VSS REST apis
@@ -26472,7 +28910,7 @@ export class VssHttpClient {
     */
     _beginRequest<T>(requestParams: VssApiResourceRequestParams, useAjaxResult?: boolean): IPromise<T>;
     _autoNegotiateApiVersion(location: WebApi_Contracts.ApiResourceLocation, requestedVersion: string): string;
-    private _beginRequestToResolvedUrl<T>(requestUrl, apiVersion, requestParams, deferred, useAjaxResult);
+    private _beginRequestToResolvedUrl<T>(requestUrl, apiVersion, requestParams, useAjaxResult);
     /**
     * Issue a request to a VSS REST endpoint and makes sure the result contains jqXHR. Use spread to access jqXHR.
     *
@@ -26501,6 +28939,7 @@ export class VssHttpClient {
     private static createLocationsByAreaPromisesCache();
     private beginGetAreaLocations(area);
     protected getRequestUrl(routeTemplate: string, area: string, resource: string, routeValues: any, queryParams?: IDictionaryStringTo<any>): string;
+    private convertQueryParamsValues(queryParams);
     private replaceRouteValues(routeTemplate, routeValues);
     _getLinkResponseHeaders(xhr: XMLHttpRequest): {
         [relName: string]: string;
