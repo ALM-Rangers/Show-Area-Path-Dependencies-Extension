@@ -155,6 +155,15 @@
         "name": "Dependencies",
         "registeredObjectId": "showDependencies"
       }
+    },
+    {
+      "id": "configuration",
+      "type": "ms.vss-web.control",
+      "description": "Configuration Options",
+      "targets": [],
+      "properties": {
+        "uri": "select_columns.html"
+      }
     }
   ]
 }
