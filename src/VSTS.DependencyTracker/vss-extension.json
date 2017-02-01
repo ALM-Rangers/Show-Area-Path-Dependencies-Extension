@@ -50,6 +50,10 @@
       "uri": "https://github.com/ALM-Rangers/Show-Area-Path-Dependencies-Extension"
     }
   },
+  "repository": {
+      "type": "git",
+      "uri": "https://github.com/ALM-Rangers/Show-Area-Path-Dependencies-Extension"
+  },
   "files": [
     {
       "path": "css",
@@ -154,6 +158,15 @@
         "title": "Dependencies",
         "name": "Dependencies",
         "registeredObjectId": "showDependencies"
+      }
+    },
+    {
+      "id": "configuration",
+      "type": "ms.vss-web.control",
+      "description": "Configuration Options",
+      "targets": [],
+      "properties": {
+        "uri": "select_columns.html"
       }
     }
   ]
