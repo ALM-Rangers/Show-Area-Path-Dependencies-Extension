@@ -366,7 +366,7 @@ export class DependencyTracker {
             query: ""
         };
 
-        var states = ["New", "Approved", "Committed"];
+        var states = ["New", "Approved", "Committed", "Active"];
 
         qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states, this.Settings.Fields);
 
