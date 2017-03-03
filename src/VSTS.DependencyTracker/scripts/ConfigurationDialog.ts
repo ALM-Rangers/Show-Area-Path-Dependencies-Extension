@@ -275,6 +275,7 @@ export class ConfigurationDialogModel {
             }
         });
 
-        return list;
+        return list.filter(exclusion => { return ConfigSettings.BadFields.indexOf(exclusion.refname) < 0;});
+
     }
 }
