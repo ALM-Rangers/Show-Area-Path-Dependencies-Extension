@@ -131,6 +131,8 @@ export class DependencyTracker {
 
             columns.push(definition);
         });
+  
+        columns.push({ text: "Relation", width: 100, index: "System.LinkName" });
 
         return columns;
     }
@@ -416,6 +418,7 @@ export class DependencyTracker {
             }
         }, rej => {
             this.TelemtryClient.trackException(rej, "DependencyTracker.QueryBacklog.queryByWiql");
+            defer.reject(rej);
         });
 
         return defer.promise();

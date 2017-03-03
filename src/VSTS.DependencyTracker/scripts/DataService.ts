@@ -143,9 +143,11 @@ export class DataService {
                 var fields: WorkItemContracts.WorkItemFieldReference[] = [];
                 witTypes.forEach(witType => {
                     witType.fieldInstances.forEach(field => {
-                        var check = fields.filter(f => { return f.referenceName == field.referenceName; });
-                        if (check.length == 0) {
-                            fields.push(field);
+                       if (!(ConfigSettings.BadFields.indexOf(field.referenceName) >= 0)) {
+                            var check = fields.filter(f => { return f.referenceName == field.referenceName; });
+                            if (check.length == 0) {
+                                fields.push(field);
+                            }
                         }
                     });
 

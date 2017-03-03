@@ -31,7 +31,8 @@ class ConfigSettings {
         "System.LinkTypes.Dependency-Forward", //sucsessor
         "System.LinkTypes.Dependency-Reverse" //predesessor
     ];
-
+    static BadFields: string[] = ["System.BISLinks"];
+   
     private static DocumentId = "vsts.dependencytracker.document.";
 
     static getDefaultSettings(context: WebContext): IDependancySettings {
