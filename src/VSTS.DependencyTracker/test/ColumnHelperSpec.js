@@ -1,4 +1,3 @@
-﻿
 //---------------------------------------------------------------------
 // <copyright file="ColumnHelperSpec.ts">
 //    This code is licensed under the MIT License.
@@ -9,17 +8,14 @@
 // </copyright>
 // <summary>Testing the Helpers classes</summary>
 //---------------------------------------------------------------------
-
 /// <reference path="../node_modules/@types/jasmine/index.d.ts" />
 /// <reference path="../src/dependency-module/Helpers.ts" />
-
-
-describe('ColumnHelper', () => {
-    it('ColumnTitle', () => {
+describe('ColumnHelper', function () {
+    it('ColumnTitle', function () {
         var fieldName = "My Field";
         var width = 100;
         var title = ColumnHelper.BuildSelectionTitle(fieldName, width);
         expect(title).toEqual("My Field [100]");
     });
 });
-
+//# sourceMappingURL=ColumnHelperSpec.js.map
