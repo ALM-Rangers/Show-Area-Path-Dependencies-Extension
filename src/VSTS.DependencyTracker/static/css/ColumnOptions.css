@@ -1,0 +1,65 @@
+﻿.selected {
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 50%;
+    position: absolute;
+}
+
+.available {
+    top: 0px;
+    bottom: 0px;
+    right: 50%;
+    left: 0px;
+    position: absolute;
+}
+
+.column-options select {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #ccc;
+}
+
+.column-options .content .list-container {
+    position: absolute;
+    left: 0px;
+    top: 23px;
+    right: 4em;
+    bottom: 0px;
+}
+
+.column-options .content .buttons {
+    position: absolute;
+    right: 0px;
+    width: 4em;
+    top: 23px;
+    bottom: 0px;
+    text-align: center;
+}
+
+.column-options .width {
+    width: 3em;
+}
+
+    .column-options .width.disabled {
+        cursor: default;
+        background-color: #e6e6e6;
+    }
+
+.column-options .width-container {
+    overflow: hidden;
+    word-break: break-all;
+    padding-left: 2px;
+}
+
+.column-options button {
+    padding: 1px !important;
+    width: 24px !important;
+    height: 24px !important;
+    margin-bottom: 2px !important;
+}
+
+.dep-button{
+    min-width:20px !important;
+
+}

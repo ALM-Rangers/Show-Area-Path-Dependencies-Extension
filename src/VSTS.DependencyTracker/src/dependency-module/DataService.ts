@@ -16,6 +16,9 @@ import WorkRestClient = require("TFS/Work/RestClient");
 import Contracts = require("TFS/Core/Contracts");
 
 export class DataService {
+
+    static SimultaneousRequestLimit = 100;
+
     public FindAllRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
         var client = WorkItemRestClient.getClient();

@@ -11,7 +11,7 @@
     "vso.profile"
   ],
   "icons": {
-    "default": "static/img/default-icon.png"
+    "default": "static/images/default-icon.png"
   },
   "tags": [
     "Work",
@@ -82,7 +82,7 @@
       ],
       "properties": {
         "name": "Dependencies",
-        "icon": "img/configure.png",
+        "icon": "images/configure.png",
         "order": 100,
         "uri": "index.html"
       }

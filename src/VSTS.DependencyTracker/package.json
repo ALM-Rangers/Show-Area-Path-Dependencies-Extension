@@ -6,21 +6,23 @@
     "clean": "rimraf ./dist && rimraf ./*.vsix"
   },
   "devDependencies": {
+    "@types/jasmine": "^2.5.47",
     "grunt": "^1.0.0",
     "grunt-contrib-copy": "*",
     "grunt-exec": "*",
-    "rimraf": "^2.5.4",
-    "tfx-cli": "^0.3.45",
-    "typescript": "^2.2.0",
     "jasmine": "^2.5.3",
     "requirejs": "^2.3.3",
-    "@types/jasmine": "^2.5.3"
+    "rimraf": "^2.5.4",
+    "tfx-cli": "^0.3.45",
+    "typescript": "^2.2.2"
   },
   "dependencies": {
     "@types/jquery": "^2.0.34",
     "@types/q": "0.0.32",
     "@types/node": "*",
-    "vss-web-extension-sdk": "^2.109.1"
+    "vss-web-extension-sdk": "^2.114.0",
+    "jquery": "3.2.1",
+    "office-ui-fabric": "2.6.3"
   },
   "name": "",
   "private": true,

@@ -1,4 +1,5 @@
 ﻿
+
 // ---------------------------------------------------------------------
 // <copyright file="DependencyTracker.ts">
 //    This code is licensed under the MIT License.
@@ -49,7 +50,7 @@ export class DependencyTracker {
 
     constructor() {
         this.DataService = new DataService.DataService();
-        
+
     }
 
     public buildGrid() {
@@ -134,7 +135,7 @@ export class DependencyTracker {
 
             columns.push(definition);
         });
-  
+
         columns.push({ text: "Relation", width: 100, index: "System.LinkName" });
 
         return columns;
@@ -339,12 +340,12 @@ export class DependencyTracker {
 
         return gridCell;
     }
-    
+
     public LoadWorkItemStates(context: WebContext, callBack: Action<string[]>) {
         // TODO: should we dig around or just hard code ?
         // !Done !Removed
     }
-    
+
     public LoadWorkItemRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
         var client = WorkItemRestClient.getClient();
@@ -362,7 +363,7 @@ export class DependencyTracker {
 
     public QueryBacklog(contex: WebContext, areaPaths: AreaPathConfiguration[], backlogTypes: string[]): IPromise<any> {
 
-        var defer = $.Deferred<any>();
+        var defer = $.Deferred();
 
         // create work client
         var client = WorkItemRestClient.getClient();
@@ -375,56 +376,101 @@ export class DependencyTracker {
 
         qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states, this.Settings.Fields);
 
+        //client.get
+
         client.queryByWiql(qry, contex.project.name).then(backlogIds => {
-            var backlog = new Array<number>();
-
-            backlogIds.workItems.forEach(workItem => {
-                if (backlog.indexOf(workItem.id) < 0) {
-                    backlog.push(workItem.id);
-                }
+            this.ProcessBalogItems(backlogIds).then(results => {
+                defer.resolve(results);
+            }, rej => {
+                defer.reject(rej);
             });
-
-            if (backlog.length <= 0) {
-                defer.resolve(null);
-            } else {
-
-                var loadSpecs = new Array<IPromise<any>>();
-                var spliceSize = 75;
-                var backlogSection = backlog.splice(0, spliceSize);
-                while (backlogSection.length > 0) {
-
-                    loadSpecs.push(this.GetWorkItemDetails(backlogSection, backlogIds.asOf));
-
-                    var backlogSection = backlog.splice(0, spliceSize);
-                }
-
-                Q.all(loadSpecs).done(all => {
-
-                    var workItems = [];
-                    var relations = [];
-
-                    all.forEach(resultItem => {
-                        workItems = workItems.concat(resultItem.workItems);
-                        relations = relations.concat(resultItem.relations);
-                    });
-
-                    var result = {
-                        workItems: workItems,
-                        relations: relations.filter(i => { return i !== null; })
-                    };
-
-                    defer.resolve(result);
-                }, rejectReason => {
-                    this.TelemtryClient.trackException(rejectReason, "DependencyTracker.QueryBacklog.QAll");
-                    defer.reject(rejectReason);
-                });
-            }
         }, rej => {
             this.TelemtryClient.trackException(rej, "DependencyTracker.QueryBacklog.queryByWiql");
             defer.reject(rej);
         });
 
         return defer.promise();
+    }
+
+
+    public ProcessBalogItems(backlogIds: WorkItemContracts.WorkItemQueryResult): IPromise<any> {
+        var defer = $.Deferred<any>();
+        var backlog = new Array<number>();
+
+        backlogIds.workItems.forEach(workItem => {
+            if (backlog.indexOf(workItem.id) < 0) {
+                backlog.push(workItem.id);
+            }
+        });
+
+
+        if (backlog.length <= 0) {
+            return null;
+        } else {
+
+            var loadSpecs: IPromise<any>[] = [];
+            var spliceSize = 2;// DataService.DataService.SimultaneousRequestLimit;
+
+            //break up into wok item id's
+            var backlogBatches = LoadHelper.Batch(backlog, spliceSize);
+
+            var allPromises: IPromise<any>[] = [];
+            backlogBatches.forEach(batch => {
+                allPromises.push(this.GetWorkItemDetails(batch, backlogIds.asOf));
+            });
+
+            //break them inot batches to syncronise
+            var bacthedQueries = LoadHelper.Batch(allPromises, spliceSize);
+
+            var syncroniser = new LoadObserver(bacthedQueries, spliceSize);
+            syncroniser.Execute().then(results => {
+                var workItems = [];
+                var relations = [];
+
+                results.forEach(resultItem => {
+                    workItems = workItems.concat(resultItem.workItems);
+                    relations = relations.concat(resultItem.relations);
+                });
+
+                var result = {
+                    workItems: workItems,
+                    relations: relations.filter(i => { return i !== null; })
+                };
+
+
+                defer.resolve(result);
+
+            }, rej => {
+                defer.reject(rej);
+
+            });
+
+            return defer.promise();
+            //return allResults;
+            //this.GetWorkItemDetails(backlogSection, backlogIds.asOf)
+
+
+            //Q.all(loadSpecs).done(all => {
+
+            //    var workItems = [];
+            //    var relations = [];
+
+            //    all.forEach(resultItem => {
+            //        workItems = workItems.concat(resultItem.workItems);
+            //        relations = relations.concat(resultItem.relations);
+            //    });
+
+            //    var result = {
+            //        workItems: workItems,
+            //        relations: relations.filter(i => { return i !== null; })
+            //    };
+
+            //    defer.resolve(result);
+            //}, rejectReason => {
+            //    this.TelemtryClient.trackException(rejectReason, "DependencyTracker.QueryBacklog.QAll");
+            //    defer.reject(rejectReason);
+            //});
+        }
     }
 
     public GetWorkItemDetails(backlogItems: number[], asOf: Date): IPromise<any> {

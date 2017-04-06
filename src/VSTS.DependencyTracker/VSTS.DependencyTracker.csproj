@@ -43,6 +43,30 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".vscode\tasks.json" />
+    <Content Include="src\jquery.fabric.js" />
+    <Content Include="src\jquery.fabric.min.js" />
+    <Content Include="src\jquery.min.js" />
+    <Content Include="static\css\ColumnOptions.css" />
+    <Content Include="static\css\fabric.components.css" />
+    <Content Include="static\css\fabric.components.min.css" />
+    <Content Include="static\css\fabric.components.rtl.css" />
+    <Content Include="static\css\fabric.components.rtl.min.css" />
+    <Content Include="static\css\fabric.css" />
+    <Content Include="static\css\fabric.min.css" />
+    <Content Include="static\css\fabric.rtl.css" />
+    <Content Include="static\css\fabric.rtl.min.css" />
+    <Content Include="static\lib\ai.1.0.8-build01310.min.js" />
+    <Content Include="static\lib\jquery.fabric.min.js" />
+    <Content Include="static\lib\jquery.min.js" />
+    <Content Include="static\lib\q.js" />
+    <Content Include="static\lib\VSS.SDK.min.js" />
+    <Content Include="web.config" />
+    <None Include="web.Debug.config">
+      <DependentUpon>web.config</DependentUpon>
+    </None>
+    <None Include="web.Release.config">
+      <DependentUpon>web.config</DependentUpon>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="src\ai.1.0.8-build01310.js" />
@@ -55,7 +79,6 @@
     <Content Include="static\index.html" />
     <Content Include="src\VSS.SDK.js" />
     <Content Include="static\select_columns.html" />
-    <Content Include="test\TestSpec.js" />
     <Content Include="marketplace\mp_terms.md" />
     <Content Include="chutzpah.json" />
     <None Include="marketplace\readme.md" />
@@ -76,6 +99,7 @@
     <TypeScriptCompile Include="src\types\types.d.ts" />
     <TypeScriptCompile Include="test\ColumnHelperSpec.ts" />
     <TypeScriptCompile Include="test\DependencyTrackerSpec.ts" />
+    <TypeScriptCompile Include="test\LoadHelperSpec.ts" />
     <TypeScriptCompile Include="test\RelationHelperSpec.ts" />
     <TypeScriptCompile Include="test\WiqlHelperSpec.ts" />
     <TypeScriptCompile Include="test\WitdColourHelperSpec.ts" />
@@ -84,6 +108,7 @@
     <Content Include="packages.config">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="vss-extension.debug.json" />
     <None Include="vss-extension.json" />
     <None Include="settings.tfx.json" />
     <None Include="gruntfile.js" />
@@ -113,15 +138,16 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <TypeScriptRemoveComments>False</TypeScriptRemoveComments>
     <TypeScriptSourceMap>True</TypeScriptSourceMap>
-    <TypeScriptTarget>ES6</TypeScriptTarget>
+    <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptJSXEmit>None</TypeScriptJSXEmit>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
     <TypeScriptModuleKind>AMD</TypeScriptModuleKind>
     <TypeScriptOutFile />
-    <TypeScriptOutDir>static</TypeScriptOutDir>
+    <TypeScriptOutDir>
+    </TypeScriptOutDir>
     <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
-    <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
+    <TypeScriptNoEmitOnError>False</TypeScriptNoEmitOnError>
     <TypeScriptMapRoot />
     <TypeScriptSourceRoot>node_modules/@types, src/types</TypeScriptSourceRoot>
   </PropertyGroup>

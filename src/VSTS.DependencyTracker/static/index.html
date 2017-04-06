@@ -18,12 +18,12 @@
     <meta charset="utf-8" />
     <title>Dependency Tracker</title>
     <link rel="stylesheet" href="css/app.css" type="text/css" />
-    <script src="sdk/VSS.SDK.min.js"></script>
-    <script src="sdk/q.js"></script>
-    <script src="sdk/ai.0.21.5-build00175.min.js"></script>
-    <script src="scripts/TelemetryClient.js"></script>
-    <script src="scripts/Configuration.js"></script>
-    <script src="scripts/Helpers.js"></script>
+    <script src="lib/VSS.SDK.min.js"></script>
+    <script src="lib/q.js"></script>
+    <script src="lib/ai.1.0.8-build01310.min.js"></script>
+    <script src="../src/dependency-module/TelemetryClient.js"></script>
+    <script src="../src/dependency-module/Configuration.js"></script>
+    <script src="../src/dependency-module/Helpers.js"></script>
     <style>
         #container {
             margin-left: 20px;
@@ -82,7 +82,7 @@
                 setupModuleLoader: true,
                 moduleLoaderConfig: {
                     paths: {
-                        "Scripts": "scripts"
+                        "Scripts": "../src/dependency-module"
                     }
                 }
             });

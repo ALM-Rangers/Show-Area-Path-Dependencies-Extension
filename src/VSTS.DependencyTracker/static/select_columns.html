@@ -20,12 +20,20 @@
     <title>Dependency Tracker - Configuration</title>
     <link rel="stylesheet" href="css/app.css" type="text/css" />
     <link rel="stylesheet" href="css/ColumnOptions.css" type="text/css" />
-    <script src="sdk/VSS.SDK.min.js"></script>
-    <script src="sdk/q.js"></script>
-    <script src="sdk/ai.0.21.5-build00175.min.js"></script>
-    <script src="scripts/TelemetryClient.js"></script>
-    <script src="scripts/Configuration.js"></script>
-    <script src="scripts/Helpers.js"></script>
+    <link rel="stylesheet" href="css/fabric.min.css" />
+    <link rel="stylesheet" href="css/fabric.components.min.css" />
+   
+    
+    <script src="lib/jquery.min.js"></script>
+    <script src="lib/VSS.SDK.min.js"></script>
+    <script src="lib/q.js"></script>
+    <script src="lib/ai.1.0.8-build01310.min.js"></script>
+    <script src="lib/jquery.fabric.min.js"></script>
+
+    <script src="../src/dependency-module/TelemetryClient.js"></script>
+    <script src="../src/dependency-module/Configuration.js"></script>
+    <script src="../src/dependency-module/Helpers.js"></script>
+
 </head>
 <body>
 
@@ -41,18 +49,20 @@
                     </div>
                     <div class="buttons">
                         <div>
-                            <button id="select_column" title="Add Column" disabled="" class="add ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                            <button id="select_column" title="Add Column" disabled="" class="ms-Button dep-button" role="button">
                                 <span class="ui-button-text">
                                     <span class="icon icon-next-2"></span>
                                 </span>
                             </button>
                         </div>
                         <div>
-                            <button id="remove_column" title="Remove Column" disabled="" class="remove ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button" style="margin-top:3px;">
+
+                            <button id="remove_column" title="Remove Column" disabled="" class="ms-Button dep-button"  style="margin-top:3px;" role="button">
                                 <span class="ui-button-text">
                                     <span class="icon icon-prev-2"></span>
                                 </span>
                             </button>
+                           
                         </div>
                     </div>
                 </div>
@@ -65,14 +75,14 @@
                     </div>
                     <div class="buttons">
                         <div>
-                            <button id="moveUp" title="Move Column Up" disabled="" class="move-up ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button">
+                            <button id="moveUp" title="Move Column Up" disabled="" class="ms-Button dep-button" role="button">
                                 <span class="ui-button-text">
                                     <span class="icon icon-up"></span>
                                 </span>
                             </button>
                         </div>
                         <div>
-                            <button id="moveDown" title="Move Column Down" disabled="" class="move-down ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only ui-button-disabled ui-state-disabled" role="button" style="margin-top:3px;">
+                            <button id="moveDown" title="Move Column Down" disabled="" class="ms-Button dep-button" role="button" style="margin-top:3px;">
                                 <span class="ui-button-text">
                                     <span class="icon icon-down"></span>
                                 </span>
@@ -101,7 +111,7 @@
             setupModuleLoader: true,
             moduleLoaderConfig: {
                 paths: {
-                    "Scripts": "scripts"
+                    "Scripts": "../src/dependency-module"
                 }
             }
         });
