@@ -131,14 +131,12 @@ class LoadHelper {
 
 class LoadObserver<T> {
 
-    constructor(batches: IPromise<T>[][], batchSize: number) {
+    constructor(batches: IPromise<T>[][]) {
         this.promiseBatches = batches;
-        this.batchSize = batchSize;
     }
 
     public promiseBatches: IPromise<T>[][] = [];
     private currentPromise: number = 0;
-    private batchSize = 75;
 
     private results: T[] = [];
 
@@ -169,20 +167,6 @@ class LoadObserver<T> {
         }, rej => {
             error(rej);
         });
-
-        //this.promiseBatches[this.currentPromise].then(result => {
-        //    this.currentPromise++;
-        //    this.results = this.results.concat(result);
-        //    if (this.currentPromise < this.promiseBatches.length) {
-        //        this.InternalExecute(complete, error);
-        //    } else {
-        //        complete(null);
-        //    }
-        //}, rej => {
-        //    error(rej);
-        //});
-
     }
-
 }
 

@@ -13,12 +13,20 @@ interface Action<T> {
     (item: T): void;
 }
 
+interface Action1<T,Y> {
+    (t: T, y: Y ): void;
+}
+
 interface Func<TResult> {
     (): TResult;
 }
 
 interface Func1<T, TResult> {
     (item: T): TResult;
+}
+
+interface Func2<T, Y, TResult> {
+    (t: T, y : Y): TResult;
 }
 
 interface HashTable {

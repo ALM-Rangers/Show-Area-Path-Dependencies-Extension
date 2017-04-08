@@ -476,7 +476,9 @@ var Microsoft;
                 }
             };
             Util.getIEVersion = function (userAgentStr) {
-                if (userAgentStr === void 0) { userAgentStr = null; }
+                if (userAgentStr === void 0) {
+                    userAgentStr = null;
+                }
                 var myNav = userAgentStr ? userAgentStr.toLowerCase() : navigator.userAgent.toLowerCase();
                 return (myNav.indexOf('msie') != -1) ? parseInt(myNav.split('msie')[1]) : null;
             };
@@ -1219,7 +1221,9 @@ var Microsoft;
 /// <reference path="../../../JavaScriptSDK.Interfaces/Contracts/Generated/Base.ts" />
 /// <reference path="../../Util.ts"/>
 var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    for (var p in b)
+        if (b.hasOwnProperty(p))
+            d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
@@ -4302,3 +4306,5 @@ var AI;
     })(AI.TestResult || (AI.TestResult = {}));
     var TestResult = AI.TestResult;
 })(AI || (AI = {}));
+//# sourceMappingURL=ai.1.0.8-build01310.js.map 
+//# sourceMappingURL=ai.1.0.8-build01310.js.map
