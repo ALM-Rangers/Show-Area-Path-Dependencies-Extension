@@ -17,7 +17,8 @@ import Contracts = require("TFS/Core/Contracts");
 
 export class DataService {
 
-    static SimultaneousRequestLimit = 100;
+    static SimultaneousRequestLimit = 50;
+    static WorkItemQueryLimit = 75;
 
     public FindAllRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();

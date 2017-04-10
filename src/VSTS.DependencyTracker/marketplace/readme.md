@@ -29,3 +29,13 @@ We need your feedback! Here are some ways to connect with us:
 
 Review the [list of features and resolved issues of latest tools and extensions](https://aka.ms/vsarreleases) for information on the latest releases.
 
+## Updates
+### V1.2.7
+* Added the ability to select columns
+* Added the ability to only show items with dependencies
+
+### V1.2.8
+* Fixed an issue relating to removal of required columns
+
+### V1.2.9
+* Changed the way the work items are loaded to reduce the volume on the server when a very large backlog is being loaded

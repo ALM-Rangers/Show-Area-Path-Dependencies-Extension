@@ -56,19 +56,69 @@
   },
   "files": [
     {
-      "path": "dist",
+      "path": "static/dist/src/dependency-module/Configuration.js",
       "addressable": true,
-      "packagePath": "/"
+      "packagePath": "dist/src/dependency-module/Configuration.js"
     },
     {
-      "path": "static",
+      "path": "static/dist/src/dependency-module/ConfigurationDialog.js",
       "addressable": true,
-      "packagePath": "/"
+      "packagePath": "dist/src/dependency-module/ConfigurationDialog.js"
     },
     {
-      "path": "node_modules/vss-web-extension-sdk/lib",
+      "path": "static/dist/src/dependency-module/DataService.js",
       "addressable": true,
-      "packagePath": "lib"
+      "packagePath": "dist/src/dependency-module/DataService.js"
+    },
+    {
+      "path": "static/dist/src/dependency-module/DependencyTracker.js",
+      "addressable": true,
+      "packagePath": "dist/src/dependency-module/DependencyTracker.js"
+    },
+    {
+      "path": "static/dist/src/dependency-module/Helpers.js",
+      "addressable": true,
+      "packagePath": "dist/src/dependency-module/Helpers.js"
+    },
+    {
+      "path": "static/dist/src/dependency-module/infrastructure.js",
+      "addressable": true,
+      "packagePath": "dist/src/dependency-module/infrastructure.js"
+    },
+    {
+      "path": "static/dist/src/dependency-module/TelemetryClient.js",
+      "addressable": true,
+      "packagePath": "dist/src/dependency-module/TelemetryClient.js"
+    },
+    {
+      "path": "static/dist/src/dependency-module/UIService.js",
+      "addressable": true,
+      "packagePath": "dist/src/dependency-module/UIService.js"
+    },
+    {
+      "path": "static/css",
+      "addressable": true,
+      "packagePath": "/css"
+    },
+    {
+      "path": "static/images",
+      "addressable": true,
+      "packagePath": "/images"
+    },
+    {
+      "path": "static/lib",
+      "addressable": true,
+      "packagePath": "/lib"
+    },
+    {
+      "path": "static/index.html",
+      "addressable": true,
+      "packagePath": "index.html"
+    },
+    {
+      "path": "static/select_columns.html",
+      "addressable": true,
+      "packagePath": "select_columns.html"
     }
   ],
 

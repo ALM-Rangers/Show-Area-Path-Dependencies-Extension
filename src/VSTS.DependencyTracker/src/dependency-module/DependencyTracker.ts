@@ -376,7 +376,7 @@ export class DependencyTracker {
 
         qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states, this.Settings.Fields);
 
-        control.setMessage("Finding backlog items...");
+        control.setMessage("Finding backlog items (this could take some time with large backlogs!)...");
 
         client.queryByWiql(qry, contex.project.name).then(backlogIds => {
             this.LoadBacklogItems(backlogIds).then(results => {
@@ -415,6 +415,8 @@ export class DependencyTracker {
             }
         });
 
+        this.TelemtryClient.trackMetric("Relations Size", backlogRelations.length);
+
         if (backlogRelations.length > 0) {
             this.BatchLoad(defer, backlogRelations, queryResult.asOf, this.GetWorkItemDetails);
         } else {
@@ -439,6 +441,8 @@ export class DependencyTracker {
             }
         });
 
+        this.TelemtryClient.trackMetric("Backlog Size", backlog.length);
+
         this.BatchLoad(defer, backlog, backlogIds.asOf, this.GetWorkItemDetails);
 
         if (backlog.length <= 0) {
@@ -451,18 +455,19 @@ export class DependencyTracker {
 
     public BatchLoad(defer: JQueryDeferred<IWorkItemSet>, ids: number[], asOfDate: Date, executionAction: Func2<number[], Date, IPromise<IWorkItemSet>>) {
         var loadSpecs: IPromise<any>[] = [];
-        var spliceSize = DataService.DataService.SimultaneousRequestLimit;
+        
 
-        //break up into wok item id's
-        var backlogBatches = LoadHelper.Batch(ids, spliceSize);
+        //break up into work item id's
+        var backlogBatches = LoadHelper.Batch(ids, DataService.DataService.WorkItemQueryLimit);
 
+        //create the request promises
         var allPromises: IPromise<any>[] = [];
         backlogBatches.forEach(batch => {
             allPromises.push(executionAction(batch, asOfDate));
         });
 
-        //break them into batches to syncronise
-        var bacthedQueries = LoadHelper.Batch(allPromises, 10);
+        //break the requests into batches to syncronise
+        var bacthedQueries = LoadHelper.Batch(allPromises, DataService.DataService.SimultaneousRequestLimit);
 
         var syncroniser = new LoadObserver(bacthedQueries);
         syncroniser.Execute().then(results => {
@@ -481,33 +486,9 @@ export class DependencyTracker {
 
         }, rej => {
             defer.reject(rej);
-
+            this.TelemtryClient.trackException(rej, "DependencyTracker.BatchLoad.syncroniser.Execute");
         });
-
     }
-
-    //public LoadBacklogRelations(relationIds: number[], asOf: Date): IPromise<IWorkItemSet> {
-
-
-    //    //var defer = $.Deferred<IWorkItemSet>();
-
-    //    //var client = WorkItemRestClient.getClient();
-
-    //    //client.getWorkItems(relationIds, null, asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogRelations => {
-
-    //    //    var result = {
-    //    //        workItems: null,
-    //    //        relations: backlogRelations
-    //    //    };
-
-    //    //    defer.resolve(result);
-    //    //}, rej => {
-    //    //    defer.reject(rej);
-    //    //});
-
-    //    //return defer.promise();
-    //}
-
 
     public GetWorkItemDetails(backlogItems: number[], asOf: Date): IPromise<IWorkItemSet> {
 

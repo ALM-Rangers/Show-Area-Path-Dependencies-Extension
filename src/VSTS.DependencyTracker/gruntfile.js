@@ -43,5 +43,5 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-exec");
     grunt.loadNpmTasks("grunt-contrib-copy");
 };
-//# sourceMappingURL=gruntfile.js.map 
+
 //# sourceMappingURL=gruntfile.js.map
