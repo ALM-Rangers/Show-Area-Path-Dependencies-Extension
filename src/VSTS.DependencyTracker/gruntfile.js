@@ -1,4 +1,4 @@
-﻿/// <binding BeforeBuild='exec:update, copy:main' AfterBuild='exec:package' ProjectOpened='exec:update, copy:main' />
+/// <binding BeforeBuild='exec:update' AfterBuild='exec:package' ProjectOpened='exec:update' />
 /*
 This file in the main entry point for defining grunt tasks and using grunt plugins.
 Click here to learn more. http://go.microsoft.com/fwlink/?LinkID=513275&clcid=0x409
@@ -9,12 +9,12 @@ module.exports = function (grunt) {
         settings: grunt.file.readJSON("settings.tfx.json"),
         exec: {
             package: {
-                command: "tfx extension create --manifest-globs vss-extension.json",
+                command: "tfx extension create --manifest-globs <%= settings.package.manifestGlobs %>",
                 stdout: true,
                 stderr: true
             },
             package_dev: {
-                command: "tfx extension create --manifest-globs vss-extension-dev.json",
+                command: "tfx extension create --manifest-globs <%= settings.package.manifestDevGlobs %>",
                 stdout: true,
                 stderr: true
             },
@@ -23,39 +23,25 @@ module.exports = function (grunt) {
                 stdout: true,
                 stderr: true
             },
-			tsdinit:{
-				command: "tsd install jquery q knockout",
+            tsdinit: {
+                command: "typings install knockout requirejs",
                 stdout: true,
                 stderr: true
-			},
-			tsdlink:{
-				command: "tsd link",
+            },
+            tsdlink: {
+                command: "typings init",
                 stdout: true,
                 stderr: true
-			},
+            },
             publish: {
-                command: "tfx extension publish --manifest-globs vss-extension.json --share-with <%= settings.publish.shareWith %> --token <%= settings.publish.token %>",
+                command: "tfx extension publish --manifest-globs <%= settings.package.manifestGlobs %> --share-with <%= settings.publish.shareWith %> --token <%= settings.publish.token %>",
                 stdout: true,
                 stderr: true
             }
-        },
-        copy: {
-            main: {
-                files: [
-                  // includes files within path
-                  { expand: true, flatten: true, src: ['node_modules/vss-web-extension-sdk/lib/VSS.SDK.js'], dest: 'scripts/', filter: 'isFile' }
-                ]
-            }
-        },
-        jasmine: {
-            src: ["scripts/**/*.js", "sdk/scripts/*.js"],
-            specs: "test/**/*[sS]pec.js",
-            helpers: "test/helpers/*.js"
         }
     });
-
     grunt.loadNpmTasks("grunt-exec");
     grunt.loadNpmTasks("grunt-contrib-copy");
-    grunt.loadNpmTasks("grunt-contrib-jasmine");
-
 };
+
+//# sourceMappingURL=gruntfile.js.map

@@ -1,27 +1,21 @@
 ﻿{
-  "Framework": "mocha",
-  "MochaInterface": "bdd",
+  "Framework": "jasmine",
   "TestFileTimeout": 60000,
   "TestHarnessReferenceMode": "AMD",
   "TypeScriptModuleKind": "AMD",
-  "Compile": {
-    "Mode": "External",
-    "Extensions": [ ".ts" ],
-    "ExtensionsWithNoOutput": [ ".d.ts" ]
-  },
+  "EnableTracing": true,
   "References": [
-    { "Path": "./node_modules/vss-web-extension-sdk/lib/vss.sdk.js" },
-    { "Path": "./node_modules/chai/chai.js" },
-    { "Path": "./node_modules/requirejs/require.js" },
     { "Path": "./node_modules/jquery/dist/jquery.js" },
-    { "Path": "./scripts/Configuration.ts" },
-    { "Path": "./scripts/Helpers.ts" },
-    { "Path": "./scripts/Configuration.ts" }
+    { "Path": "./node_modules/requirejs/require.js" },
+    {
+      "Includes": [ "*/src/dependency-module/*.ts" ],
+      "Excludes": [ "*/src/*.d.ts" ]
+    }
   ],
   "Tests": [
     {
-      "Includes": [ "*/test/*.ts" ],
-      "Excludes": [ "*.d.ts", "specrunner.ts" ]
+      "Excludes": [ "*.d.ts", "specrunner.ts" ],
+      "Includes": [ "*/test/*.ts" ]
     }
   ]
 }

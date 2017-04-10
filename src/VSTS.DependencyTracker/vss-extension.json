@@ -11,7 +11,7 @@
     "vso.profile"
   ],
   "icons": {
-    "default": "img/default-icon.png"
+    "default": "static/images/default-icon.png"
   },
   "tags": [
     "Work",
@@ -29,15 +29,11 @@
   ],
   "content": {
     "details": {
-      "path": "package/readme.md"
+      "path": "marketplace/readme.md"
     },
     "license": {
       "path": "marketplace/mp_terms.md"
     }
-  },
-  "branding": {
-    "color": "rgb(51,65,133)",
-    "theme": "dark"
   },
   "links": {
     "support": {
@@ -51,87 +47,82 @@
     }
   },
   "repository": {
-      "type": "git",
-      "uri": "https://github.com/ALM-Rangers/Show-Area-Path-Dependencies-Extension"
+    "type": "git",
+    "uri": "https://github.com/ALM-Rangers/Show-Area-Path-Dependencies-Extension"
+  },
+  "branding": {
+    "color": "rgb(51,65,133)",
+    "theme": "dark"
   },
   "files": [
     {
-      "path": "css",
-      "addressable": true
-    },
-    {
-      "path": "index.html",
-      "addressable": true
-    },
-    {
-      "path": "select_columns.html",
-      "addressable": true
-    },
-    {
-      "path": "scripts/Configuration.js",
+      "path": "static/dist/src/dependency-module/Configuration.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/Configuration.js"
     },
     {
-      "path": "scripts/UIService.js",
+      "path": "static/dist/src/dependency-module/ConfigurationDialog.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/ConfigurationDialog.js"
     },
     {
-      "path": "scripts/ConfigurationDialog.js",
+      "path": "static/dist/src/dependency-module/DataService.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/DataService.js"
     },
     {
-      "path": "scripts/DataService.js",
+      "path": "static/dist/src/dependency-module/DependencyTracker.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/DependencyTracker.js"
     },
     {
-      "path": "scripts/DependencyTracker.js",
+      "path": "static/dist/src/dependency-module/Helpers.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/Helpers.js"
     },
     {
-      "path": "scripts/Helpers.js",
+      "path": "static/dist/src/dependency-module/infrastructure.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/infrastructure.js"
     },
     {
-      "path": "scripts/TelemetryClient.js",
+      "path": "static/dist/src/dependency-module/TelemetryClient.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/TelemetryClient.js"
     },
     {
-      "path": "scripts/Infrastructure.js",
+      "path": "static/dist/src/dependency-module/UIService.js",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "dist/src/dependency-module/UIService.js"
     },
     {
-      "path": "sdk/VSS.SDK.min.js",
+      "path": "static/css",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "/css"
     },
     {
-      "path": "sdk/ai.0.21.5-build00175.min.js",
+      "path": "static/images",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "/images"
     },
     {
-      "path": "sdk/q.js",
+      "path": "static/lib",
       "addressable": true,
-      "contentType": "application/javascript"
+      "packagePath": "/lib"
     },
     {
-      "path": "img/screenshot.gif",
-      "addressable": true
+      "path": "static/index.html",
+      "addressable": true,
+      "packagePath": "index.html"
     },
     {
-      "path": "img/screen3.png",
-      "addressable": true
+      "path": "static/select_columns.html",
+      "addressable": true,
+      "packagePath": "select_columns.html"
     }
   ],
-  "contributions": [
+
+ "contributions": [
     {
       "id": "dependency-tracker-hub",
       "type": "ms.vss-web.hub",
@@ -141,7 +132,7 @@
       ],
       "properties": {
         "name": "Dependencies",
-        "icon": "img/configure.png",
+        "icon": "images/configure.png",
         "order": 100,
         "uri": "index.html"
       }

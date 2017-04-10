@@ -1,7 +1,8 @@
 ﻿{
   "serviceUrl": "https://your.visualstudio.com.account",
   "package": {
-    "manifestGlobs": [ "vss-extension.json" ]
+    "manifestGlobs": [ "vss-extension.json" ],
+    "manifestDevGlobs": [ "vss-extension.debug.json" ]
   },
   "publish": {
     "galleryUrl": "https://marketplace.visualstudio.com/",

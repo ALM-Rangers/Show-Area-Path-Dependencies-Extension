@@ -1,5 +1,6 @@
 ﻿
 
+
 //---------------------------------------------------------------------
 // <copyright file="DependencyTrackerSpec.ts">
 //    This code is licensed under the MIT License.
@@ -11,14 +12,12 @@
 // <summary>Testing the DependencyTracker class</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="../typings/vss/vss.d.ts" />
-/// <reference path="../typings/vss/tfs.d.ts" />
-/// <reference path="../scripts/Helpers.ts" />
-/// <reference path="../typings/mocha/mocha.d.ts" />
-/// <reference path="../typings/chai/chai.d.ts" />
+/// <reference path="../node_modules/@types/jasmine/index.d.ts" />
+/// <reference path="../src/types/types.d.ts" />
+/// <reference path="../src/dependency-module/Helpers.ts" />
 
 "use strict";
-import Dep = require("../scripts/DependencyTracker");
+import Dep = require("../src/dependency-module/DependencyTracker");
 
 import Controls = require("VSS/Controls");
 import Grids = require("VSS/Controls/Grids");
@@ -45,9 +44,10 @@ describe('DependencyTracker', () => {
 
         var gridCols = tracker.GetGridColumns(cols);
 
-        chai.expect(gridCols.length).eq(5);
-        chai.expect(gridCols[0].text).eq("Col 1");
-        chai.expect(gridCols[1].text).eq("Col 2");
-        chai.expect(gridCols[4].text).eq("Col 5");
+        expect(gridCols.length).toEqual(5);
+        expect(gridCols[0].text).toEqual("Col 1");
+        expect(gridCols[1].text).toEqual("Col 2");
+        expect(gridCols[4].text).toEqual("Col 5");
     });
 });
+             
