@@ -9,20 +9,19 @@
 // <summary>Testing the Helpers classes</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="../node_modules/@types/jasmine/index.d.ts" />
-/// <reference path="../src/types/types.d.ts" />
-/// <reference path="../src/dependency-module/Helpers.ts" />
-
+/// <reference path="../scripts/Helpers.ts" />
+/// <reference path="../typings/mocha/mocha.d.ts" />
+/// <reference path="../typings/chai/chai.d.ts" />
 
 describe('WitdColourHelper', () => {
     it('ResolveColour_With_ValidKey', () => {
         var witdName = "User Story";
         var colour = WitdColourHelper.ResolveColour(witdName);
-        expect(colour).toEqual("#009CCC");
+        chai.expect(colour).eq("#009CCC");
     });
     it('ResolveColour_With_InValidKey', () => {
         var witdName = "Blah";
         var colour = WitdColourHelper.ResolveColour(witdName);
-        expect(colour).toEqual("");
+        chai.expect(colour).eq("");
     });
 });

@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{42BCE503-5E7D-422B-87D2-648C3989B602}</ProjectGuid>
+    <ProjectGuid>{E7216333-92FA-4684-A68B-B1F0A883C721}</ProjectGuid>
     <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -12,7 +12,7 @@
     <AssemblyName>VSTS.DependencyTracker</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TypeScriptToolsVersion>2.1</TypeScriptToolsVersion>
+    <TypeScriptToolsVersion>1.7.4</TypeScriptToolsVersion>
     <UseIISExpress>true</UseIISExpress>
     <IISExpressSSLPort>44300</IISExpressSSLPort>
     <IISExpressAnonymousAuthentication />
@@ -43,24 +43,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".vscode\tasks.json" />
-    <Content Include="src\jquery.fabric.js" />
-    <Content Include="src\jquery.fabric.min.js" />
-    <Content Include="src\jquery.min.js" />
-    <Content Include="static\css\ColumnOptions.css" />
-    <Content Include="static\css\fabric.components.css" />
-    <Content Include="static\css\fabric.components.min.css" />
-    <Content Include="static\css\fabric.components.rtl.css" />
-    <Content Include="static\css\fabric.components.rtl.min.css" />
-    <Content Include="static\css\fabric.css" />
-    <Content Include="static\css\fabric.min.css" />
-    <Content Include="static\css\fabric.rtl.css" />
-    <Content Include="static\css\fabric.rtl.min.css" />
-    <Content Include="static\lib\ai.1.0.8-build01310.min.js" />
-    <Content Include="static\lib\jquery.fabric.min.js" />
-    <Content Include="static\lib\jquery.min.js" />
-    <Content Include="static\lib\q.js" />
-    <Content Include="static\lib\VSS.SDK.min.js" />
+    <Content Include="css\ColumnOptions.css" />
+    <Content Include="sdk\q.js" />
+    <Content Include="select_columns.html" />
     <Content Include="web.config" />
+    <Content Include="chutzpah.json" />
+    <Content Include="packages.config" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
@@ -69,50 +57,57 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="src\ai.1.0.8-build01310.js" />
-    <Content Include="src\ai.1.0.8-build01310.min.js" />
-    <Content Include="static\css\app.css" />
-    <Content Include="static\images\configure.png" />
-    <Content Include="static\images\default-icon.png" />
-    <Content Include="static\images\screen3.png" />
-    <Content Include="static\images\screenshot.gif" />
-    <Content Include="static\index.html" />
-    <Content Include="src\VSS.SDK.js" />
-    <Content Include="static\select_columns.html" />
+    <Content Include="css\app.css" />
+    <Content Include="img\configure.png" />
+    <Content Include="img\default-icon.png" />
+    <Content Include="img\logo-wide.png" />
+    <Content Include="img\screen1.png" />
+    <Content Include="img\screen2.png" />
+    <Content Include="img\screen3.png" />
+    <Content Include="img\screenshot.gif" />
+    <Content Include="index.html" />
+    <Content Include="sdk\ai.0.21.5-build00175.js" />
+    <Content Include="sdk\ai.0.21.5-build00175.min.js" />
+    <Content Include="sdk\VSS.SDK.js" />
+    <Content Include="sdk\VSS.SDK.min.js" />
     <Content Include="marketplace\mp_terms.md" />
-    <Content Include="chutzpah.json" />
-    <None Include="marketplace\readme.md" />
+    <Content Include="package\readme.md" />
     <None Include="package.json" />
-    <None Include=".gitignore" />
-    <None Include=".tfignore" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="src\types\ai.1.0.8-build01310.d.ts" />
-    <TypeScriptCompile Include="src\dependency-module\Configuration.ts" />
-    <TypeScriptCompile Include="src\dependency-module\ConfigurationDialog.ts" />
-    <TypeScriptCompile Include="src\dependency-module\DataService.ts" />
-    <TypeScriptCompile Include="src\dependency-module\DependencyTracker.ts" />
-    <TypeScriptCompile Include="src\dependency-module\Helpers.ts" />
-    <TypeScriptCompile Include="src\dependency-module\Infrastructure.ts" />
-    <TypeScriptCompile Include="src\dependency-module\TelemetryClient.ts" />
-    <TypeScriptCompile Include="src\dependency-module\UIService.ts" />
-    <TypeScriptCompile Include="src\types\types.d.ts" />
+    <TypeScriptCompile Include="scripts\Configuration.ts" />
+    <TypeScriptCompile Include="scripts\ConfigurationDialog.ts" />
+    <TypeScriptCompile Include="scripts\DataService.ts" />
+    <TypeScriptCompile Include="scripts\DependencyTracker.ts" />
+    <TypeScriptCompile Include="scripts\Helpers.ts" />
+    <TypeScriptCompile Include="scripts\Infrastructure.ts" />
+    <TypeScriptCompile Include="scripts\TelemetryClient.ts" />
+    <TypeScriptCompile Include="scripts\UIService.ts" />
+    <TypeScriptCompile Include="sdk\ai.0.21.5-build00175.d.ts" />
     <TypeScriptCompile Include="test\ColumnHelperSpec.ts" />
     <TypeScriptCompile Include="test\DependencyTrackerSpec.ts" />
-    <TypeScriptCompile Include="test\LoadHelperSpec.ts" />
     <TypeScriptCompile Include="test\RelationHelperSpec.ts" />
     <TypeScriptCompile Include="test\WiqlHelperSpec.ts" />
     <TypeScriptCompile Include="test\WitdColourHelperSpec.ts" />
+    <TypeScriptCompile Include="typings\assertion-error\assertion-error.d.ts" />
+    <TypeScriptCompile Include="typings\chai\chai.d.ts" />
+    <TypeScriptCompile Include="typings\jquery\jquery.d.ts" />
+    <TypeScriptCompile Include="typings\mocha\mocha.d.ts" />
+    <TypeScriptCompile Include="typings\q\q.d.ts" />
+    <TypeScriptCompile Include="typings\knockout\knockout.d.ts" />
+    <TypeScriptCompile Include="typings\requirejs\require.d.ts" />
+    <TypeScriptCompile Include="typings\tsd.d.ts" />
+    <TypeScriptCompile Include="typings\vss\rmo.d.ts" />
+    <TypeScriptCompile Include="typings\vss\tfs.d.ts" />
+    <TypeScriptCompile Include="typings\vss\vss.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="packages.config">
-      <SubType>Designer</SubType>
-    </Content>
-    <Content Include="vss-extension.debug.json" />
     <None Include="vss-extension.json" />
     <None Include="settings.tfx.json" />
     <None Include="gruntfile.js" />
-    <None Include="tsconfig.json.bak" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
@@ -121,7 +116,7 @@
     <VisualStudio>
       <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
         <WebProjectProperties>
-          <UseIIS>True</UseIIS>
+          <UseIIS>False</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>52265</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
@@ -136,20 +131,19 @@
     </VisualStudio>
   </ProjectExtensions>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <TypeScriptRemoveComments>False</TypeScriptRemoveComments>
-    <TypeScriptSourceMap>True</TypeScriptSourceMap>
+    <TypeScriptRemoveComments>false</TypeScriptRemoveComments>
+    <TypeScriptSourceMap>true</TypeScriptSourceMap>
     <TypeScriptTarget>ES5</TypeScriptTarget>
     <TypeScriptJSXEmit>None</TypeScriptJSXEmit>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
     <TypeScriptModuleKind>AMD</TypeScriptModuleKind>
     <TypeScriptOutFile />
-    <TypeScriptOutDir>static/dist</TypeScriptOutDir>
+    <TypeScriptOutDir />
     <TypeScriptGeneratesDeclarations>False</TypeScriptGeneratesDeclarations>
     <TypeScriptNoEmitOnError>True</TypeScriptNoEmitOnError>
     <TypeScriptMapRoot />
-    <TypeScriptSourceRoot>
-    </TypeScriptSourceRoot>
+    <TypeScriptSourceRoot />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <TypeScriptRemoveComments>true</TypeScriptRemoveComments>

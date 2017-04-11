@@ -1,5 +1,4 @@
-﻿
-//---------------------------------------------------------------------
+﻿//---------------------------------------------------------------------
 // <copyright file="ColumnHelperSpec.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -10,16 +9,16 @@
 // <summary>Testing the Helpers classes</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="../node_modules/@types/jasmine/index.d.ts" />
-/// <reference path="../src/dependency-module/Helpers.ts" />
-
+/// <reference path="../scripts/Helpers.ts" />
+/// <reference path="../typings/mocha/mocha.d.ts" />
+/// <reference path="../typings/chai/chai.d.ts" />
 
 describe('ColumnHelper', () => {
     it('ColumnTitle', () => {
         var fieldName = "My Field";
         var width = 100;
         var title = ColumnHelper.BuildSelectionTitle(fieldName, width);
-        expect(title).toEqual("My Field [100]");
+        chai.expect(title).eq("My Field [100]");
     });
 });
 

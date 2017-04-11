@@ -230,4 +230,3 @@ ModelManifest.xml
 *.7z
 /src/VSTS.DependencyTracker/scripts/VSS.SDK.js
 /src/VSTS.DependencyTracker/vss-extension - Copy.json
-*.map

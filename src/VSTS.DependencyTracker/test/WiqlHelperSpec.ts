@@ -9,9 +9,9 @@
  // <summary>Testing the Wiql generation methods</summary>
  //---------------------------------------------------------------------
 
-/// <reference path="../node_modules/@types/jasmine/index.d.ts" />
-/// <reference path="../src/types/types.d.ts" />
-/// <reference path="../src/dependency-module/Helpers.ts" />
+/// <reference path="../scripts/Helpers.ts" />
+/// <reference path="../typings/mocha/mocha.d.ts" />
+/// <reference path="../typings/chai/chai.d.ts" />
 
 
 describe('WiqlHelper', () => {
@@ -20,7 +20,7 @@ describe('WiqlHelper', () => {
         var backlogItems: string[] = ['Product Backlog Item', 'Bug'];
         var backlogState: string[] = ['New', 'Committed', 'In Progress'];
         var text = WiqlHelper.CreateBacklogWiql(paths, backlogItems, backlogState, ConfigSettings.FieldList);
-        expect(text).toEqual("select [System.WorkItemType], [System.Title], [System.AreaPath], [System.State], [Microsoft.VSTS.Scheduling.Effort], [System.IterationPath], [System.Tags], [System.NodeName] from WorkItems where( [System.WorkItemType] in ('Product Backlog Item','Bug') and ( [System.AreaPath] = 'Project' or [System.AreaPath] = 'Project\\Team 2' ) and [System.State] in ('New','Committed','In Progress'))", text);
+        chai.expect(text).eq("select [System.WorkItemType], [System.Title], [System.AreaPath], [System.State], [Microsoft.VSTS.Scheduling.Effort], [System.IterationPath], [System.Tags], [System.NodeName] from WorkItems where( [System.WorkItemType] in ('Product Backlog Item','Bug') and ( [System.AreaPath] = 'Project' or [System.AreaPath] = 'Project\\Team 2' ) and [System.State] in ('New','Committed','In Progress'))", text);
     });
 
     it('buildPathStatement', () => {
@@ -28,7 +28,7 @@ describe('WiqlHelper', () => {
         var text = WiqlHelper.buildPathStatement(paths);
         var expectedResult = `[System.AreaPath] = 'Project' or [System.AreaPath] = 'Project\\Team 2'`;
 
-        expect(text).toEqual(expectedResult);
+        chai.expect(text).eq(expectedResult);
     });
 
     it('buildPathStatement_WithChildren', () => {
@@ -36,7 +36,7 @@ describe('WiqlHelper', () => {
         var text = WiqlHelper.buildPathStatement(paths);
         var expectedResult = `[System.AreaPath] under 'Project' or [System.AreaPath] = 'Project\\Team 2'`;
 
-        expect(text).toEqual(expectedResult);
+        chai.expect(text).eq(expectedResult);
     });
 
    
