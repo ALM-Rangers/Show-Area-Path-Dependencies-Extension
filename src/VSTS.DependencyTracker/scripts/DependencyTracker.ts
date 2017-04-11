@@ -421,12 +421,7 @@ export class DependencyTracker {
             defer.resolve({ workItems: null, relations: null });
         }
 
-        if (backlogRelations.length <= 0) {
-            return null;
-        } else {
-            return defer.promise();
-        }
-
+        return defer.promise();
     }
 
     public LoadBacklogItems(backlogIds: WorkItemContracts.WorkItemQueryResult): IPromise<IWorkItemSet> {
