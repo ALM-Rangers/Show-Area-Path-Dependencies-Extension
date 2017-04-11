@@ -37,5 +37,5 @@ Review the [list of features and resolved issues of latest tools and extensions]
 ### V1.2.8
 * Fixed an issue relating to removal of required columns
 
-### V1.2.9
+### V1.2.11
 * Changed the way the work items are loaded to reduce the volume on the server when a very large backlog is being loaded
