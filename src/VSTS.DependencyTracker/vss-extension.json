@@ -29,7 +29,7 @@
   ],
   "content": {
     "details": {
-      "path": "package/readme.md"
+      "path": "marketplace/readme.md"
     },
     "license": {
       "path": "marketplace/mp_terms.md"

@@ -1,4 +1,6 @@
-﻿// ---------------------------------------------------------------------
+﻿
+
+// ---------------------------------------------------------------------
 // <copyright file="DependencyTracker.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -9,10 +11,9 @@
 // <summary>Main logic for the DependencyTracker Extension</summary>
 // ---------------------------------------------------------------------
 
+"use strict";
 /// <reference path="../typings/tsd.d.ts" />
 /// <reference path="Configuration.ts" />
-
-"use strict";
 import Controls = require("VSS/Controls");
 import Grids = require("VSS/Controls/Grids");
 
@@ -47,6 +48,7 @@ export class DependencyTracker {
 
     constructor() {
         this.DataService = new DataService.DataService();
+
     }
 
     public buildGrid() {
@@ -86,9 +88,8 @@ export class DependencyTracker {
         me.DataService.GetWorkItemTypes(context).then(workItemTypes => {
             waitControl.setMessage("Loading area paths...");
             me.DataService.GetAreaPaths(context).then(paths => {
-                waitControl.setMessage("Loading backlog");
+                waitControl.setMessage("Quering backlog");
                 me.QueryBacklog(context, paths, workItemTypes).then(data => {
-
                     if (data) {
                         waitControl.setMessage("Populating grid");
                         me.PopulateGrid(container, data, paths);
@@ -99,7 +100,6 @@ export class DependencyTracker {
 
                     loadTimer.Stop();
                     me.TelemtryClient.trackMetric("Load_Duration", loadTimer.GetDurationInMilliseconds());
-
                 },
                     rej => {
                         me.TelemtryClient.trackException(rej, "DependencyTracker.LoadData");
@@ -131,7 +131,7 @@ export class DependencyTracker {
 
             columns.push(definition);
         });
-  
+
         columns.push({ text: "Relation", width: 100, index: "System.LinkName" });
 
         return columns;
@@ -168,7 +168,7 @@ export class DependencyTracker {
     public BuildPivotOptions(pivotContainer: JQuery) {
 
         this.CreateDependenciesFilter(pivotContainer);
-        // TODO: Maybe in teh next update
+        // TODO: Maybe in the next update
         // this.CreateQueryAcrossProjects(pivotContainer);
     }
 
@@ -336,12 +336,12 @@ export class DependencyTracker {
 
         return gridCell;
     }
-    
+
     public LoadWorkItemStates(context: WebContext, callBack: Action<string[]>) {
         // TODO: should we dig around or just hard code ?
         // !Done !Removed
     }
-    
+
     public LoadWorkItemRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
         var client = WorkItemRestClient.getClient();
@@ -359,7 +359,9 @@ export class DependencyTracker {
 
     public QueryBacklog(contex: WebContext, areaPaths: AreaPathConfiguration[], backlogTypes: string[]): IPromise<any> {
 
-        var defer = $.Deferred<any>();
+        var control = UIService.UIService.GetWaitControl(DependencyTracker.WaitControlID, this.container);
+
+        var defer = $.Deferred();
 
         // create work client
         var client = WorkItemRestClient.getClient();
@@ -372,50 +374,23 @@ export class DependencyTracker {
 
         qry.query = WiqlHelper.CreateBacklogWiql(areaPaths, backlogTypes, states, this.Settings.Fields);
 
+        control.setMessage("Finding backlog items (this could take some time with large backlogs!)...");
+
         client.queryByWiql(qry, contex.project.name).then(backlogIds => {
-            var backlog = new Array<number>();
+            this.LoadBacklogItems(backlogIds).then(results => {
 
-            backlogIds.workItems.forEach(workItem => {
-                if (backlog.indexOf(workItem.id) < 0) {
-                    backlog.push(workItem.id);
-                }
-            });
+                control.setMessage("Loading backlog relationships...");
+                this.LoadBacklogRelations(backlogIds, results).then(relations => {
 
-            if (backlog.length <= 0) {
-                defer.resolve(null);
-            } else {
+                    results.relations = relations.workItems;
 
-                var loadSpecs = new Array<IPromise<any>>();
-                var spliceSize = 75;
-                var backlogSection = backlog.splice(0, spliceSize);
-                while (backlogSection.length > 0) {
-
-                    loadSpecs.push(this.GetWorkItemDetails(backlogSection, backlogIds.asOf));
-
-                    var backlogSection = backlog.splice(0, spliceSize);
-                }
-
-                Q.all(loadSpecs).done(all => {
-
-                    var workItems = [];
-                    var relations = [];
-
-                    all.forEach(resultItem => {
-                        workItems = workItems.concat(resultItem.workItems);
-                        relations = relations.concat(resultItem.relations);
-                    });
-
-                    var result = {
-                        workItems: workItems,
-                        relations: relations.filter(i => { return i !== null; })
-                    };
-
-                    defer.resolve(result);
-                }, rejectReason => {
-                    this.TelemtryClient.trackException(rejectReason, "DependencyTracker.QueryBacklog.QAll");
-                    defer.reject(rejectReason);
+                    defer.resolve(results);
+                }, rej => {
+                    defer.reject(rej);
                 });
-            }
+            }, rej => {
+                defer.reject(rej);
+            });
         }, rej => {
             this.TelemtryClient.trackException(rej, "DependencyTracker.QueryBacklog.queryByWiql");
             defer.reject(rej);
@@ -424,47 +399,109 @@ export class DependencyTracker {
         return defer.promise();
     }
 
-    public GetWorkItemDetails(backlogItems: number[], asOf: Date): IPromise<any> {
+    public LoadBacklogRelations(queryResult: WorkItemContracts.WorkItemQueryResult, discoveredIds: IWorkItemSet): IPromise<IWorkItemSet> {
+        var defer = $.Deferred<IWorkItemSet>();
+        var backlogRelations: number[] = [];
+
+        discoveredIds.workItems.forEach((backlogItem, idx, arr) => {
+            if (backlogItem.relations) {
+                backlogItem.relations.forEach(relation => {
+                    if (ConfigSettings.RelationTypes.indexOf(relation.rel) >= 0) {
+                        backlogRelations.push(RelationHelper.FindIDFromLink(relation.url));
+                    }
+                });
+            }
+        });
+
+        this.TelemtryClient.trackMetric("Relations Size", backlogRelations.length);
+
+        if (backlogRelations.length > 0) {
+            this.BatchLoad(defer, backlogRelations, queryResult.asOf, this.GetWorkItemDetails);
+        } else {
+            defer.resolve({ workItems: null, relations: null });
+        }
+
+        if (backlogRelations.length <= 0) {
+            return null;
+        } else {
+            return defer.promise();
+        }
+
+    }
+
+    public LoadBacklogItems(backlogIds: WorkItemContracts.WorkItemQueryResult): IPromise<IWorkItemSet> {
+        var defer = $.Deferred<IWorkItemSet>();
+        var backlog: number[] = [];
+
+        backlogIds.workItems.forEach(workItem => {
+            if (backlog.indexOf(workItem.id) < 0) {
+                backlog.push(workItem.id);
+            }
+        });
+
+        this.TelemtryClient.trackMetric("Backlog Size", backlog.length);
+
+        this.BatchLoad(defer, backlog, backlogIds.asOf, this.GetWorkItemDetails);
+
+        if (backlog.length <= 0) {
+            return null;
+        } else {
+            return defer.promise();
+        }
+    }
+
+
+    public BatchLoad(defer: JQueryDeferred<IWorkItemSet>, ids: number[], asOfDate: Date, executionAction: Func2<number[], Date, IPromise<IWorkItemSet>>) {
+        var loadSpecs: IPromise<any>[] = [];
+        
+
+        //break up into work item id's
+        var backlogBatches = LoadHelper.Batch(ids, DataService.DataService.WorkItemQueryLimit);
+
+        //create the request promises
+        var allPromises: IPromise<any>[] = [];
+        backlogBatches.forEach(batch => {
+            allPromises.push(executionAction(batch, asOfDate));
+        });
+
+        //break the requests into batches to syncronise
+        var bacthedQueries = LoadHelper.Batch(allPromises, DataService.DataService.SimultaneousRequestLimit);
+
+        var syncroniser = new LoadObserver(bacthedQueries);
+        syncroniser.Execute().then(results => {
+            var workItems = [];
+
+            results.forEach(resultItem => {
+                workItems = workItems.concat(resultItem.workItems);
+            });
+
+            var result: IWorkItemSet = {
+                workItems: workItems,
+                relations: null
+            };
+
+            defer.resolve(result);
+
+        }, rej => {
+            defer.reject(rej);
+            this.TelemtryClient.trackException(rej, "DependencyTracker.BatchLoad.syncroniser.Execute");
+        });
+    }
+
+    public GetWorkItemDetails(backlogItems: number[], asOf: Date): IPromise<IWorkItemSet> {
 
         var client = WorkItemRestClient.getClient();
 
-        var defer = $.Deferred<any>();
+        var defer = $.Deferred<IWorkItemSet>();
 
         client.getWorkItems(backlogItems, null, asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogWorkItems => {
             // get relation id's
-            var relations = new Array<number>();
+            var result: IWorkItemSet = {
+                workItems: backlogWorkItems,
+                relations: null
+            };
 
-            backlogWorkItems.forEach((backlogItem, idx, arr) => {
-                if (backlogItem.relations) {
-                    backlogItem.relations.forEach(relation => {
-                        if (ConfigSettings.RelationTypes.indexOf(relation.rel) >= 0) {
-                            relations.push(RelationHelper.FindIDFromLink(relation.url));
-                        }
-                    });
-                }
-            });
-
-            if (relations.length > 0) {
-
-                client.getWorkItems(relations, null, asOf, WorkItemContracts.WorkItemExpand.Relations).then(backlogRelations => {
-
-                    var result = {
-                        workItems: backlogWorkItems,
-                        relations: backlogRelations
-                    };
-
-                    defer.resolve(result);
-                });
-
-            } else {
-
-                var result = {
-                    workItems: backlogWorkItems,
-                    relations: null
-                };
-
-                defer.resolve(result);
-            }
+            defer.resolve(result);
         }, err => {
             this.TelemtryClient.trackException(err, "DependencyTracker.GetWorkItemDetails.getWorkItems");
             defer.reject(err);
@@ -535,4 +572,9 @@ export class DependencyTracker {
 
         return found.length > 0;
     }
+}
+
+interface IWorkItemSet {
+    workItems: WorkItemContracts.WorkItem[];
+    relations: WorkItemContracts.WorkItem[];
 }

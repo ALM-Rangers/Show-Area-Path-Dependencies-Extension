@@ -49,6 +49,7 @@
     <Content Include="web.config" />
     <Content Include="chutzpah.json" />
     <Content Include="packages.config" />
+    <Content Include="marketplace\readme.md" />
     <None Include="web.Debug.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
@@ -71,7 +72,6 @@
     <Content Include="sdk\VSS.SDK.js" />
     <Content Include="sdk\VSS.SDK.min.js" />
     <Content Include="marketplace\mp_terms.md" />
-    <Content Include="package\readme.md" />
     <None Include="package.json" />
   </ItemGroup>
   <ItemGroup>

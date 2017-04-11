@@ -1,4 +1,5 @@
-﻿//---------------------------------------------------------------------
+﻿
+//---------------------------------------------------------------------
 // <copyright file="Helpers.ts">
 //    This code is licensed under the MIT License.
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF 
@@ -9,7 +10,7 @@
 // <summary>Various helper classes and functions</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="Configuration.ts" />
+/// <reference path="infrastructure.ts" />
 
 class WiqlHelper {
 
@@ -74,7 +75,7 @@ class RelationHelper {
 
 class WitdColourHelper {
 
-    static ResolveColour(workItemTypeName: string) : string {
+    static ResolveColour(workItemTypeName: string): string {
         var colourMap = {};
         colourMap["User Story"] = "#009CCC";
         colourMap["Product Backlog Item"] = "#009CCC";
@@ -95,7 +96,7 @@ class WitdColourHelper {
 class StopWatch {
 
     public StartTime: Date;
-    public EndTime: Date; 
+    public EndTime: Date;
 
     public Start() {
         this.StartTime = new Date(Date.now());
@@ -113,6 +114,59 @@ class StopWatch {
 
     public GetDurationInSeconds(): number {
         return this.GetDurationInMilliseconds() / 1000;
+    }
+}
+
+
+class LoadHelper {
+    static Batch<T>(arr: T[], size: number): T[][] {
+        const result = [];
+        for (let i = 0; i < arr.length; i += size) {
+            result.push(arr.slice(i, i + size));
+        }
+        return result;
+    }
+
+}
+
+class LoadObserver<T> {
+
+    constructor(batches: IPromise<T>[][]) {
+        this.promiseBatches = batches;
+    }
+
+    public promiseBatches: IPromise<T>[][] = [];
+    private currentPromise: number = 0;
+
+    private results: T[] = [];
+
+    public Execute(): IPromise<T> {
+        var defer = $.Deferred();
+
+        if (this.promiseBatches.length > 0) {
+            this.InternalExecute(() => {
+                defer.resolve(this.results);
+            }, err => {
+                defer.reject(err);
+            });
+        }
+        return defer.promise();
+    }
+
+
+    private InternalExecute(complete: Action<any>, error: Action<any>) {
+
+        Q.all(this.promiseBatches[this.currentPromise]).then(result => {
+            this.currentPromise++;
+            this.results = this.results.concat(result);
+            if (this.currentPromise < this.promiseBatches.length) {
+                this.InternalExecute(complete, error);
+            } else {
+                complete(null);
+            }
+        }, rej => {
+            error(rej);
+        });
     }
 }
 

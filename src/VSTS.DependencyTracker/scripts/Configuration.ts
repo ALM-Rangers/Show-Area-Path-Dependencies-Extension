@@ -9,6 +9,7 @@
 // <summary>This is the start for configuration settings. At this stage it is "hard coded", but in future we will be setting it using a config page and reading it from the user storage</summary>
 //---------------------------------------------------------------------
 
+
 class ConfigSettings {
     static DefaultColumnWidth: number = 100;
     static RequirementCategory: string = "Microsoft.RequirementCategory";

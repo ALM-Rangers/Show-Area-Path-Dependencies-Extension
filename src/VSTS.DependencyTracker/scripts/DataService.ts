@@ -9,10 +9,6 @@
 // <summary>Data Service Proxy to retrieve and update settings and configuration</summary>
 //---------------------------------------------------------------------
 
-/// <reference path="../typings/tsd.d.ts" />
-/// <reference path="Configuration.ts" />
-/// <reference path="TelemetryClient.ts" />
-
 "use strict";
 import WorkItemRestClient = require("TFS/WorkItemTracking/RestClient");
 import WorkItemContracts = require("TFS/WorkItemTracking/Contracts");
@@ -20,6 +16,10 @@ import WorkRestClient = require("TFS/Work/RestClient");
 import Contracts = require("TFS/Core/Contracts");
 
 export class DataService {
+
+    static SimultaneousRequestLimit = 50;
+    static WorkItemQueryLimit = 75;
+
     public FindAllRelationTypes(): IPromise<HashTable> {
         var defer = $.Deferred<HashTable>();
         var client = WorkItemRestClient.getClient();
