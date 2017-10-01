@@ -10,6 +10,7 @@
     "requirejs": "^2.3.1",
     "tfx-cli": "^0.3.39",
     "tsd": "^0.6.5",
+    "typescript": "2.4.3",
     "vss-web-extension-sdk": "^1.110.0"
   },
   "name": "",
