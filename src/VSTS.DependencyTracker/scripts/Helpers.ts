@@ -140,8 +140,8 @@ class LoadObserver<T> {
 
     private results: T[] = [];
 
-    public Execute(): IPromise<T> {
-        var defer = $.Deferred();
+    public Execute(): IPromise<T[]> {
+        var defer = $.Deferred<T[]>();
 
         if (this.promiseBatches.length > 0) {
             this.InternalExecute(() => {
