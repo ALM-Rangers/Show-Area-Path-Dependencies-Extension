@@ -1,6 +1,11 @@
+> **NOTICE** - We are deprecating this experimental extension!
+> ------------------------------------------------------------
+> Users who have installed the extension on VSTS or TFS can continue using their version. New installs or downloads are unsupported.
+> The extension will continue to serve as an open source solution and sample extension on [GitHub](https://www.github.com/alm-rangers).
+> Questions? Please see feedback section below. 
+
 Agile teams do not rely on traditional project management techniques to track dependencies. 
 This extension provides a lightweight way to manage dependencies on other teams.
-
 
 ## Quick steps to get started
 1. Navigate to your backlog and review your backlog items
