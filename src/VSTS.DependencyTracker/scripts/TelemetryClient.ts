@@ -35,27 +35,31 @@ class TelemetryClient {
     private appInsightsClient: Microsoft.ApplicationInsights.AppInsights;
 
     private Init() {
-        var snippet: any = {
-            config: {
-                instrumentationKey: TelemetryClient.DevLabs
-            }
-        };
 
-        try {
-            var webContext = VSS.getWebContext();
+        // Disabling telemetry for deprecated extension for GDPR
+        this.appInsightsClient = null;
 
-            this.IsAvailable = false;//webContext.account.uri.indexOf("visualstudio.com") > 0;
+        //var snippet: any = {
+        //    config: {
+        //        instrumentationKey: TelemetryClient.DevLabs
+        //    }
+        //};
 
-            if (this.IsAvailable) {
-                var init = new Microsoft.ApplicationInsights.Initialization(snippet);
-                this.appInsightsClient = init.loadAppInsights();
-                this.appInsightsClient.setAuthenticatedUserContext(webContext.user.id, webContext.collection.id);
-            }
-        }
-        catch (e) {
-            this.appInsightsClient = null;
-            console.log(e);
-        }
+        //try {
+        //    var webContext = VSS.getWebContext();
+
+        //    this.IsAvailable = false;//webContext.account.uri.indexOf("visualstudio.com") > 0;
+
+        //    if (this.IsAvailable) {
+        //        var init = new Microsoft.ApplicationInsights.Initialization(snippet);
+        //        this.appInsightsClient = init.loadAppInsights();
+        //        this.appInsightsClient.setAuthenticatedUserContext(webContext.user.id, webContext.collection.id);
+        //    }
+        //}
+        //catch (e) {
+        //    this.appInsightsClient = null;
+        //    console.log(e);
+        //}
     }
 
     public trackPageView(name?: string, url?: string, properties?: Object, measurements?: Object, duration?: number) {
